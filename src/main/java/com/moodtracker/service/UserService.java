@@ -6,10 +6,16 @@ import com.moodtracker.model.User;
 import com.moodtracker.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
+
 
 @Service
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final AiService aiService;
@@ -63,7 +69,7 @@ public class UserService {
         if (user == null) {
             throw new UserNotFoundException("User " + username + " not found!");
         }
-        System.out.println("Getting Notes for user: " + user.getUsername());
+        logger.info("Getting notes for user: {}", user.getUsername());
         StringBuilder NotesBuilder = new StringBuilder();
         user.getNotes().forEach(Note -> NotesBuilder.append(Note.getText()).append("\n"));
         return aiService.getNotesFromDeepSeek(NotesBuilder.toString());

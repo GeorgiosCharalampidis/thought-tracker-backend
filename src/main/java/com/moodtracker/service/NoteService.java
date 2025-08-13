@@ -5,11 +5,17 @@ import com.moodtracker.model.User;
 import com.moodtracker.repository.NoteRepository;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDate;
 import java.util.List;
 
+
 @Service
 public class NoteService {
+
+    private static final Logger logger = LoggerFactory.getLogger(NoteService.class);
 
     private final NoteRepository NoteRepository;
     private final UserService userService;
@@ -23,16 +29,15 @@ public class NoteService {
         User user = userService.getUserByUsername(username);
         if (user == null) {
             throw new RuntimeException("User not found");
-        } else {
-            System.out.println("User found: " + user.getUsername());
         }
-
         if (Note.getText() == null || Note.getText().isEmpty()) {
             throw new RuntimeException("Note text cannot be empty");
         }
 
+        logger.info("Creating note for user: {} with text: {}", username, Note.getText());
         Note.setUser(user);
-        Note.setDate(LocalDate.now()); // Auto-set the date
+        Note.setDate(LocalDate.now());
+
         return NoteRepository.save(Note);
     }
 
