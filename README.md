@@ -1,6 +1,6 @@
 # MoodTracker
 
-MoodTracker is a Spring Boot application designed to track and analyze user thoughts and moods. It uses the DeepSeek R1 model running locally via Ollama to provide insights and summaries of user thoughts.
+MoodTracker is a Spring Boot application designed to track and analyze user Notes and moods. It uses the DeepSeek R1 model running locally via Ollama to provide insights and summaries of user Notes.
 
 ## Getting Started
 
@@ -76,11 +76,11 @@ Ensure that the DeepSeek R1 model is running locally and accessible at `http://l
   DELETE /api/users/{username}
   ```
 
-#### Thought Endpoints
+#### Note Endpoints
 
-- **Create Thought for User**
+- **Create Note for User**
   ```http
-  POST /api/thoughts/{userName}
+  POST /api/Notes/{userName}
   ```
   Request Body:
   ```json
@@ -94,29 +94,29 @@ Ensure that the DeepSeek R1 model is running locally and accessible at `http://l
   }
   ```
 
-- **Get Thoughts by User**
+- **Get Notes by User**
   ```http
-  GET /api/thoughts/{userName}
+  GET /api/Notes/{userName}
   ```
 
-- **Get Thoughts by User and Date Range**
+- **Get Notes by User and Date Range**
   ```http
-  GET /api/thoughts/user/{userId}/date-range?startDate=2023-10-01&endDate=2023-10-15
+  GET /api/Notes/user/{userId}/date-range?startDate=2023-10-01&endDate=2023-10-15
   ```
 
-- **Delete Thought**
+- **Delete Note**
   ```http
-  DELETE /api/thoughts/{thoughtId}
+  DELETE /api/Notes/{NoteId}
   ```
 
-- **Delete All Thoughts**
+- **Delete All Notes**
   ```http
-  DELETE /api/thoughts
+  DELETE /api/Notes
   ```
 
-- **Get User Thoughts Summary**
+- **Get User Notes Summary**
   ```http
-  GET /api/thoughts/{username}/summary
+  GET /api/Notes/{username}/summary
   ```
 
 ## License

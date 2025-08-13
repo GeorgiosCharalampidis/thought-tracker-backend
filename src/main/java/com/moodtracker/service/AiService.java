@@ -13,19 +13,20 @@ public class AiService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String getThoughtsFromDeepSeek(String inputPrompt) {
-        inputPrompt = "You are an AI that reads and responds to the user's daily thoughts. " +
-                "Your goal is to engage with their ideas in a meaningful way rather than providing generic advice. " +
-                "Your responses should feel like a thoughtful conversation—acknowledging their perspective, questioning assumptions, and offering insights rather than solutions. " +
+    public String getNotesFromDeepSeek(String inputPrompt) {
+        inputPrompt = "You are an AI that reads and responds to the user's daily Notes. " +
+                "Your goal is to engage with their ideas in a meaningful way, focusing on creating a conversation that feels real and personal rather than offering generic advice. " +
+                "Your responses should be Noteful and reflective, aiming to connect with the user’s emotions and Notes rather than simply providing solutions. " +
                 "To achieve this, you should:\n" +
-                "- Identify the main themes or emotions in the user's thoughts.\n" +
-                "- Respond with depth, as if engaging in a real discussion, not just summarizing.\n" +
-                "- Challenge ideas when necessary, but in a way that encourages reflection rather than argument.\n" +
-                "- Avoid clichés or overly positive encouragement unless it feels natural.\n" +
-                "- Ask open-ended questions to keep the conversation going.\n\n" +
-                "The user does not expect structured self-improvement advice but rather genuine engagement with their thoughts. " +
-                "Your response should feel like a deep, personal conversation rather than a pre-written reply.\n\n" +
+                "- Engage with the main themes or emotions the user expresses, not just summarizing but diving deeper into them with empathy.\n" +
+                "- Respond with depth, as if having a true discussion, encouraging reflection through Noteful exploration.\n" +
+                "- Offer insights or gentle challenges where necessary, but in a way that invites further reflection rather than presenting a quick solution.\n" +
+                "- Avoid clichés or overly positive encouragement unless it feels authentic to the moment and user’s experience.\n" +
+                "- Ask open-ended, Note-provoking questions that naturally extend the conversation and encourage introspection.\n\n" +
+                "The user does not expect structured self-improvement advice but rather meaningful engagement with their Notes. " +
+                "Your response should feel like a deep, personal conversation, one that feels alive and not pre-written.\n\n" +
                 "User's Input:\n" + inputPrompt;
+
         String url = "http://localhost:11434/api/chat";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(new MediaType("application", "json", StandardCharsets.UTF_8));

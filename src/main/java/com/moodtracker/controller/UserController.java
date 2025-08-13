@@ -1,6 +1,6 @@
 package com.moodtracker.controller;
 
-import com.moodtracker.model.Thought;
+import com.moodtracker.model.Note;
 import com.moodtracker.model.User;
 import com.moodtracker.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -30,11 +30,11 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    @GetMapping("/{username}/thoughts")
-    public ResponseEntity<List<Thought>> getThoughtsByUser(@PathVariable String username) {
+    @GetMapping("/{username}/notes")
+    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable String username) {
         User user = userService.getUserByUsername(username);
-        List<Thought> thoughts = userService.getThoughtsByUser(user);
-        return ResponseEntity.ok(thoughts);
+        List<Note> Notes = userService.getNotesByUser(user);
+        return ResponseEntity.ok(Notes);
     }
 
     @GetMapping

@@ -36,7 +36,7 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore // Prevents infinite recursion
-    private List<Thought> thoughts;
+    private List<Note> notes;
 
     // Default constructor (required by JPA)
     public User() {
@@ -82,8 +82,8 @@ public class User {
         }
     }
 
-    public List<Thought> getThoughts() {
-        return thoughts;
+    public List<Note> getNotes() {
+        return notes;
     }
 
     @Override

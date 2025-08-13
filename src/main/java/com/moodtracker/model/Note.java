@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "thoughts")
-public class Thought {
+@Table(name = "notes")
+public class Note {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,11 +24,11 @@ public class Thought {
     private User user;
 
     // Default constructor (required by JPA)
-    public Thought() {
+    public Note() {
     }
 
     // Parameterized constructor
-    public Thought(String text, LocalDate date, User user) {
+    public Note(String text, LocalDate date, User user) {
         this.text = text;
         this.date = date;
         this.user = user;
@@ -66,7 +66,7 @@ public class Thought {
     // toString() method (optional, for debugging)
     @Override
     public String toString() {
-        return "Thought{" +
+        return "Note{" +
                 "id=" + id +
                 ", text='" + text + '\'' +
                 ", date=" + date +

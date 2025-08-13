@@ -1,7 +1,7 @@
 package com.moodtracker.service;
 
 import com.moodtracker.exception.UserNotFoundException;
-import com.moodtracker.model.Thought;
+import com.moodtracker.model.Note;
 import com.moodtracker.model.User;
 import com.moodtracker.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -27,10 +27,6 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -40,8 +36,8 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public List<Thought> getThoughtsByUser(User user) {
-        return user.getThoughts();
+    public List<Note> getNotesByUser(User user) {
+        return user.getNotes();
     }
 
     public User updateUser(String username, User userDetails) {
@@ -62,14 +58,14 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    public String getDeepSeekThoughts(String username) {
+    public String getDeepSeekNotes(String username) {
         User user = userRepository.findByUsername(username);
         if (user == null) {
             throw new UserNotFoundException("User " + username + " not found!");
         }
-        System.out.println("Getting thoughts for user: " + user.getUsername());
-        StringBuilder thoughtsBuilder = new StringBuilder();
-        user.getThoughts().forEach(thought -> thoughtsBuilder.append(thought.getText()).append("\n"));
-        return aiService.getThoughtsFromDeepSeek(thoughtsBuilder.toString());
+        System.out.println("Getting Notes for user: " + user.getUsername());
+        StringBuilder NotesBuilder = new StringBuilder();
+        user.getNotes().forEach(Note -> NotesBuilder.append(Note.getText()).append("\n"));
+        return aiService.getNotesFromDeepSeek(NotesBuilder.toString());
     }
 }
