@@ -16,7 +16,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long userId;
 
     @NotBlank
     @Size(max = 20)
@@ -50,8 +50,8 @@ public class User {
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
+    public Long getUserId() {
+        return userId;
     }
 
     public String getUsername() {
@@ -89,7 +89,7 @@ public class User {
     @Override
     public String toString() {
         return "User{" +
-                "id=" + id +
+                "id=" + userId +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +

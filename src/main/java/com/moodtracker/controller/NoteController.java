@@ -4,6 +4,7 @@ import com.moodtracker.service.NoteService;
 import com.moodtracker.service.UserService;
 import com.moodtracker.model.Note;
 import com.moodtracker.model.User;
+import com.moodtracker.exception.UserNotFoundException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,17 +23,15 @@ public class NoteController {
         this.userService = userService;
     }
 
-    @PostMapping("/{userName}")
-    public ResponseEntity<Note> createNoteForUser(@PathVariable String userName, @RequestBody Note Note) {
-        Note createdNote = NoteService.createNoteForUser(userName, Note);
+    @PostMapping("/{userId}")
+    public ResponseEntity<Note> createNoteForUser(@PathVariable Long userId, @RequestBody Note Note) {
+        Note createdNote = NoteService.createNoteForUser(userId, Note);
         return ResponseEntity.ok(createdNote);
     }
 
-    @GetMapping("/{userName}")
-    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable String userName) {
-        // Fetch user by ID (you’ll need a UserService for this)
-        User user = userService.getUserByUsername(userName);
-        List<Note> Notes = NoteService.getNotesByUser(user);
+    @GetMapping("/{userId}")
+    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable Long userId) {
+        List<Note> Notes = NoteService.getNotesByUser(userId);
         return ResponseEntity.ok(Notes);
     }
 
@@ -47,22 +46,24 @@ public class NoteController {
         return ResponseEntity.ok(Notes);
     }
 
-    @DeleteMapping("/{userName}/{NoteId}")
+    @DeleteMapping("/{NoteId}")
     public ResponseEntity<Void> deleteNote(@PathVariable Long NoteId) {
         NoteService.deleteNote(NoteId);
         return ResponseEntity.noContent().build(); // 204 No Content on success
     }
 
-    // delete all Notes
-    @DeleteMapping
-    public ResponseEntity<Void> deleteAllNotes() {
-        NoteService.deleteAllNotes();
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteNotesByUser(@PathVariable Long userId) {
+        List<Note> notes = NoteService.getNotesByUser(userId);
+        for (Note note : notes) {
+            NoteService.deleteNote(note.getId());
+        }
         return ResponseEntity.noContent().build(); // 204 No Content on success
     }
 
-    @GetMapping("/{username}/summary")
-    public String getUserNotesSummary(@PathVariable String username) {
-        return userService.getDeepSeekNotes(username);
+    @GetMapping("/{userId}/summary")
+    public String getUserNotesSummary(@PathVariable Long userId) {
+        return userService.getDeepSeekNotes(userId);
     }
 
 }

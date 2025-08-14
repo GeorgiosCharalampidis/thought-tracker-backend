@@ -25,24 +25,21 @@ public class NoteService {
         this.userService = userService;
     }
 
-    public Note createNoteForUser(String username, Note Note) {
-        User user = userService.getUserByUsername(username);
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
+    public Note createNoteForUser(Long userId, Note Note) {
+        User user = userService.getUserById(userId);
         if (Note.getText() == null || Note.getText().isEmpty()) {
             throw new RuntimeException("Note text cannot be empty");
         }
 
-        logger.info("Creating note for user: {} with text: {}", username, Note.getText());
+        logger.info("Creating note for user: {} with text: {}", user.getUsername(), Note.getText());
         Note.setUser(user);
         Note.setDate(LocalDate.now());
 
         return NoteRepository.save(Note);
     }
 
-    public List<Note> getNotesByUser(User user) {
-        return NoteRepository.findByUser(user);
+    public List<Note> getNotesByUser(Long userId) {
+        return NoteRepository.findByUser_UserId(userId);
     }
 
     public List<Note> getNotesByUserAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
@@ -54,9 +51,5 @@ public class NoteService {
             throw new RuntimeException("Note not found with ID: " + NoteId);
         }
         NoteRepository.deleteById(NoteId);
-    }
-
-    public void deleteAllNotes() {
-        NoteRepository.deleteAll();
     }
 }

@@ -24,15 +24,15 @@ public class UserController {
         return ResponseEntity.ok(createdUser);
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
-        User user = userService.getUserByUsername(username);
+    @GetMapping("/{userId}")
+    public ResponseEntity<User> getUserById(@PathVariable Long userId) {
+        User user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
     }
 
-    @GetMapping("/{username}/notes")
-    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable String username) {
-        User user = userService.getUserByUsername(username);
+    @GetMapping("/{userId}/notes")
+    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable Long userId) {
+        User user = userService.getUserById(userId);
         List<Note> Notes = userService.getNotesByUser(user);
         return ResponseEntity.ok(Notes);
     }
@@ -43,15 +43,15 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    @PutMapping("/{username}")
-    public ResponseEntity<User> updateUser(@PathVariable String username, @RequestBody User userDetails) {
-        User updatedUser = userService.updateUser(username, userDetails);
+    @PutMapping("/{userId}")
+    public ResponseEntity<User> updateUser(@PathVariable Long userId, @RequestBody User userDetails) {
+        User updatedUser = userService.updateUser(userId, userDetails);
         return ResponseEntity.ok(updatedUser);
     }
 
-    @DeleteMapping("/{username}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String username) {
-        userService.deleteUser(username);
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId) {
+        userService.deleteUser(userId);
         return ResponseEntity.noContent().build();
     }
 }

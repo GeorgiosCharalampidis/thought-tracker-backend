@@ -2,6 +2,8 @@ package com.moodtracker.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import lombok.Setter;
+
 import java.time.LocalDate;
 
 @Entity
@@ -43,24 +45,20 @@ public class Note {
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public LocalDate getDate() {
-        return date;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public void setDate(LocalDate date) {
         this.date = date;
     }
 
-    public User getUser() {
-        return user;
+    public LocalDate getDate() {
+        return date;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public User getUser() {
+        return user;
     }
 
     // toString() method (optional, for debugging)

@@ -29,13 +29,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
-    }
-
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + userId + " not found!"));
     }
 
     public List<User> getAllUsers() {
@@ -46,28 +42,28 @@ public class UserService {
         return user.getNotes();
     }
 
-    public User updateUser(String username, User userDetails) {
-        User user = userRepository.findByUsername(username);
+    public User updateUser(Long userId, User userDetails) {
+        User user = userRepository.findByUserId(userId);
         if (user == null) {
-            throw new UserNotFoundException("User " + username + " not found!");
+            throw new UserNotFoundException("User not found!");
         }
         user.setEmail(userDetails.getEmail());
         user.setPassword(userDetails.getPassword());
         return userRepository.save(user);
     }
 
-    public void deleteUser(String username) {
-        User user = userRepository.findByUsername(username);
+    public void deleteUser(Long userId) {
+        User user = userRepository.findByUserId(userId);
         if (user == null) {
-            throw new UserNotFoundException("User " + username + " not found!");
+            throw new UserNotFoundException("User not found!");
         }
         userRepository.delete(user);
     }
 
-    public String getDeepSeekNotes(String username) {
-        User user = userRepository.findByUsername(username);
+    public String getDeepSeekNotes(Long userId) {
+        User user = userRepository.findByUserId(userId);
         if (user == null) {
-            throw new UserNotFoundException("User " + username + " not found!");
+            throw new UserNotFoundException("User not found!");
         }
         logger.info("Getting notes for user: {}", user.getUsername());
         StringBuilder NotesBuilder = new StringBuilder();
