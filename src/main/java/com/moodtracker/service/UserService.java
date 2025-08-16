@@ -4,7 +4,9 @@ import com.moodtracker.exception.UserNotFoundException;
 import com.moodtracker.model.Note;
 import com.moodtracker.model.User;
 import com.moodtracker.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +21,19 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final AiService aiService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, AiService aiService) {
+
+    public UserService(UserRepository userRepository, AiService aiService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.aiService = aiService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User createUser(User user) {
+    public User createUser(User user)
+    {
+        user.validateCredentials();
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
@@ -47,8 +55,9 @@ public class UserService {
         if (user == null) {
             throw new UserNotFoundException("User not found!");
         }
+        user.validateCredentials();
         user.setEmail(userDetails.getEmail());
-        user.setPassword(userDetails.getPassword());
+        user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
         return userRepository.save(user);
     }
 

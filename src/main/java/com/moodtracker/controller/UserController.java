@@ -18,8 +18,10 @@ public class UserController {
         this.userService = userService;
     }
 
+
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
+        // Validate user input
         User createdUser = userService.createUser(user);
         return ResponseEntity.ok(createdUser);
     }

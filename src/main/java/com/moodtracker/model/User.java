@@ -1,10 +1,12 @@
 package com.moodtracker.model;
 
+import com.moodtracker.exception.BadCredentialsException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 @Entity
@@ -38,7 +40,6 @@ public class User {
     @JsonIgnore // Prevents infinite recursion
     private List<Note> notes;
 
-    // Default constructor (required by JPA)
     public User() {
     }
 
@@ -47,6 +48,18 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = password;
+    }
+
+    public void validateCredentials() {
+        if (username == null || username.isBlank() || username.length() > 20) {
+            throw new BadCredentialsException("Invalid username");
+        }
+        if (email == null || !email.contains("@") || email.length() > 50) {
+            throw new BadCredentialsException("Invalid email address");
+        }
+        if (password == null || password.length() < 4) {
+            throw new BadCredentialsException("Password must be at least 4 characters long");
+        }
     }
 
     // Getters and Setters
@@ -63,11 +76,7 @@ public class User {
     }
 
     public void setEmail(String email) {
-        if (email != null && email.contains("@")) {
-            this.email = email;
-        } else {
-            throw new RuntimeException("Invalid email address");
-        }
+        this.email = email;
     }
 
     public String getPassword() {
@@ -75,11 +84,7 @@ public class User {
     }
 
     public void setPassword(String password) {
-        if (password != null && password.length() >= 4) {
-            this.password = password;
-        } else {
-            throw new RuntimeException("Password must be at least 4 characters long");
-        }
+        this.password = password;
     }
 
     public List<Note> getNotes() {
