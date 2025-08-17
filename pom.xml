@@ -10,11 +10,11 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>com.moodtracker</groupId>
-	<artifactId>moodtracker</artifactId>
+	<groupId>com.mindlog</groupId>
+	<artifactId>mindlog</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>moodtracker</name>
-	<description>Mood Tracker application built with Spring Boot</description>
+	<name>mindlog</name>
+	<description>mindLog application built with Spring Boot</description>
 
 	<properties>
 		<java.version>17</java.version>

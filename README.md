@@ -1,6 +1,6 @@
-# MoodTracker
+# mindLog
 
-MoodTracker is a Spring Boot application designed to track and analyze user Notes and moods. It uses the DeepSeek R1 model running locally via Ollama to provide insights and summaries of user Notes.
+mindLog is a Spring Boot application designed to track and analyze user Notes and moods. It uses the DeepSeek R1 model running locally via Ollama to provide insights and summaries of user Notes.
 
 ## Getting Started
 
@@ -14,8 +14,8 @@ MoodTracker is a Spring Boot application designed to track and analyze user Note
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/moodtracker.git
-   cd moodtracker
+   git clone https://github.com/yourusername/mindlog.git
+   cd mindlog
    ```
 
 2. Build the project using Maven:
