@@ -1,10 +1,10 @@
-package com.moodtracker;
+package com.mindlog;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MoodtrackerApplicationTests {
+class mindlogApplicationTests {
 
 	@Test
 	void contextLoads() {

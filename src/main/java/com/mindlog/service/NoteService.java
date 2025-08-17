@@ -1,8 +1,10 @@
-package com.moodtracker.service;
+package com.mindlog.service;
 
-import com.moodtracker.model.Note;
-import com.moodtracker.model.User;
-import com.moodtracker.repository.NoteRepository;
+import com.mindlog.model.Note;
+import com.mindlog.model.User;
+import com.mindlog.repository.NoteRepository;
+import com.mindlog.exception.BadCredentialsException;
+
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -28,7 +30,7 @@ public class NoteService {
     public Note createNoteForUser(Long userId, Note Note) {
         User user = userService.getUserById(userId);
         if (Note.getText() == null || Note.getText().isEmpty()) {
-            throw new RuntimeException("Note text cannot be empty");
+            throw new BadCredentialsException("Note text cannot be empty");
         }
 
         logger.info("Creating note for user: {} with text: {}", user.getUsername(), Note.getText());

@@ -1,9 +1,9 @@
-package com.moodtracker.service;
+package com.mindlog.service;
 
-import com.moodtracker.exception.UserNotFoundException;
-import com.moodtracker.model.Note;
-import com.moodtracker.model.User;
-import com.moodtracker.repository.UserRepository;
+import com.mindlog.exception.UserNotFoundException;
+import com.mindlog.model.Note;
+import com.mindlog.model.User;
+import com.mindlog.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 

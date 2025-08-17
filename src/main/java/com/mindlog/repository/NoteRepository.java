@@ -1,7 +1,7 @@
-package com.moodtracker.repository;
+package com.mindlog.repository;
 
-import com.moodtracker.model.Note;
-import com.moodtracker.model.User;
+import com.mindlog.model.Note;
+import com.mindlog.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

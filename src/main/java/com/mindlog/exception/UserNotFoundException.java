@@ -1,4 +1,4 @@
-package com.moodtracker.exception;
+package com.mindlog.exception;
 
 public class UserNotFoundException extends RuntimeException {
     public UserNotFoundException(String message) {

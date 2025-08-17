@@ -1,10 +1,9 @@
-package com.moodtracker.controller;
+package com.mindlog.controller;
 
-import com.moodtracker.service.NoteService;
-import com.moodtracker.service.UserService;
-import com.moodtracker.model.Note;
-import com.moodtracker.model.User;
-import com.moodtracker.exception.UserNotFoundException;
+import com.mindlog.service.NoteService;
+import com.mindlog.service.UserService;
+import com.mindlog.model.Note;
+import com.mindlog.model.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

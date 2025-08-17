@@ -1,6 +1,6 @@
-package com.moodtracker.model;
+package com.mindlog.model;
 
-import com.moodtracker.exception.BadCredentialsException;
+import com.mindlog.exception.BadCredentialsException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -18,6 +18,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "userId")
     private Long userId;
 
     @NotBlank

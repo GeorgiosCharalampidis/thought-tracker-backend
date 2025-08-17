@@ -1,4 +1,4 @@
-package com.moodtracker.service;
+package com.mindlog.service;
 
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;

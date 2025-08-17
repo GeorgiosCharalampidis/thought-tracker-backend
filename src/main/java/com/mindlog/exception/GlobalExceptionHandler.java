@@ -1,4 +1,4 @@
-package com.moodtracker.exception;
+package com.mindlog.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,8 +1,7 @@
-package com.moodtracker.model;
+package com.mindlog.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-import lombok.Setter;
 
 import java.time.LocalDate;
 
@@ -22,7 +21,7 @@ public class Note {
     private LocalDate date;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "userId", nullable = false)
     private User user;
 
     // Default constructor (required by JPA)
