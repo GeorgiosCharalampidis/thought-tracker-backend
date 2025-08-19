@@ -23,14 +23,14 @@ public class NoteController {
     }
 
     @PostMapping("/{userId}")
-    public ResponseEntity<Note> createNoteForUser(@PathVariable Long userId, @RequestBody Note Note) {
-        Note createdNote = NoteService.createNoteForUser(userId, Note);
-        return ResponseEntity.ok(createdNote);
+    public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes) {
+        List<Note> createdNotes = NoteService.createNotesForUser(userId, notes);
+        return ResponseEntity.ok(createdNotes);
     }
 
     @GetMapping("/{userId}")
     public ResponseEntity<List<Note>> getNotesByUser(@PathVariable Long userId) {
-        List<Note> Notes = NoteService.getNotesByUser(userId);
+        List<Note> Notes = NoteService.getNotesByUserId(userId);
         return ResponseEntity.ok(Notes);
     }
 
@@ -41,23 +41,20 @@ public class NoteController {
             @RequestParam LocalDate endDate) {
         // Fetch user by ID
         User user = userService.getUserById(userId);
-        List<Note> Notes = NoteService.getNotesByUserAndDateRange(user, startDate, endDate);
+        List<Note> Notes = NoteService.getNotesByUserIdAndDateRange(user, startDate, endDate);
         return ResponseEntity.ok(Notes);
     }
 
-    @DeleteMapping("/{NoteId}")
-    public ResponseEntity<Void> deleteNote(@PathVariable Long NoteId) {
-        NoteService.deleteNote(NoteId);
-        return ResponseEntity.noContent().build(); // 204 No Content on success
+    @DeleteMapping("/{userId}/{noteId}")
+    public ResponseEntity<Void> deleteNoteById(@PathVariable Long userId, @PathVariable Long noteId) {
+        NoteService.deleteNoteByIdAndUserId(userId, noteId);
+        return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{userId}")
+    @DeleteMapping("/{userId}/all")
     public ResponseEntity<Void> deleteNotesByUser(@PathVariable Long userId) {
-        List<Note> notes = NoteService.getNotesByUser(userId);
-        for (Note note : notes) {
-            NoteService.deleteNote(note.getId());
-        }
-        return ResponseEntity.noContent().build(); // 204 No Content on success
+        NoteService.deleteNotesByUserId(userId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{userId}/summary")

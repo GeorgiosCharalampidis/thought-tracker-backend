@@ -27,31 +27,47 @@ public class NoteService {
         this.userService = userService;
     }
 
-    public Note createNoteForUser(Long userId, Note Note) {
+    public List<Note> createNotesForUser(Long userId, List<Note> notes) {
         User user = userService.getUserById(userId);
-        if (Note.getText() == null || Note.getText().isEmpty()) {
-            throw new BadCredentialsException("Note text cannot be empty");
+        if (notes == null || notes.isEmpty()) {
+            throw new BadCredentialsException("Note list cannot be empty");
         }
 
-        logger.info("Creating note for user: {} with text: {}", user.getUsername(), Note.getText());
-        Note.setUser(user);
-        Note.setDate(LocalDate.now());
+        for (Note note : notes) {
+            if (note.getText() == null || note.getText().isEmpty()) {
+                throw new BadCredentialsException("Note text cannot be empty");
+            }
+            note.setUser(user);
+            note.setDate(LocalDate.now());
+        }
 
-        return NoteRepository.save(Note);
+        return NoteRepository.saveAll(notes);
     }
 
-    public List<Note> getNotesByUser(Long userId) {
+    public List<Note> getNotesByUserId(Long userId) {
         return NoteRepository.findByUser_UserId(userId);
     }
 
-    public List<Note> getNotesByUserAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
+    public List<Note> getNotesByUserIdAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
         return NoteRepository.findByUserAndDateBetween(user, startDate, endDate);
     }
 
-    public void deleteNote(Long NoteId) {
-        if (!NoteRepository.existsById(NoteId)) {
-            throw new RuntimeException("Note not found with ID: " + NoteId);
-        }
-        NoteRepository.deleteById(NoteId);
+    public void deleteNoteByIdAndUserId(Long userId, Long noteId) {
+        Note note = NoteRepository.findByUser_UserId(userId)
+                .stream()
+                .filter(n -> n.getId().equals(noteId))
+                .findFirst()
+                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
+
+        NoteRepository.delete(note);
     }
+
+    public void deleteNotesByUserId(Long userId) {
+        List<Note> notes = NoteRepository.findByUser_UserId(userId);
+        if (notes.isEmpty()) {
+            throw new BadCredentialsException("No notes found for user with ID " + userId);
+        }
+        NoteRepository.deleteAll(notes);
+    }
+
 }
