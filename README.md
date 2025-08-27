@@ -1,124 +1,65 @@
-# mindLog
+## mindLog
 
-mindLog is a Spring Boot application designed to track and analyze user Notes and moods. It uses the DeepSeek R1 model running locally via Ollama to provide insights and summaries of user Notes.
+Semantic journaling backend (Spring Boot). Notes are auto-categorized into themes using free, local embeddings (Ollama) and cosine similarity.
 
-## Getting Started
+### Features
+- Server-assigned subjects; users never choose categories
+- Local embeddings via Ollama (`nomic-embed-text`)
+- Per-note semantic assignment to curated themes (see `NoteCluster`)
+- Endpoints to list subjects, filter notes by subject, and trigger assignment
+
+## Setup
 
 ### Prerequisites
-
-- Java 17
+- Java 17+
 - Maven
-- DeepSeek R1 model running locally via Ollama
+- PostgreSQL
+- Ollama installed and available on `http://localhost:11434`
 
-### Installation
+### Configure DB
+Edit `src/main/resources/application.properties`:
 
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/yourusername/mindlog.git
-   cd mindlog
-   ```
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/mood
+spring.datasource.username=postgres
+spring.datasource.password=123
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+```
 
-2. Build the project using Maven:
-   ```sh
-   mvn clean install
-   ```
+### Start Ollama
+```bash
+ollama serve
+ollama pull nomic-embed-text
+```
 
-3. Run the application:
-   ```sh
-   mvn spring-boot:run
-   ```
+### Run
+```bash
+mvn spring-boot:run
+```
+App: `http://localhost:8080`
 
-### Configuration
+## API
+Base: `/api/notes`
 
-Ensure that the DeepSeek R1 model is running locally and accessible at `http://localhost:11434/api/deepseek`.
+- POST `/{userId}`: create notes (subject ignored on create)
+```json
+[
+  { "text": "I feel overwhelmed by deadlines." },
+  { "text": "I’m excited about my new painting project!" }
+]
+```
 
-### API Endpoints
+- POST `/{userId}/auto-cluster`: embed and assign themes per note
+- GET `/{userId}/subjects`: list user’s distinct subjects
+- GET `/{userId}/subject/{subject}`: notes by subject (URL-encode)
+- GET `/subjects`: all allowed theme labels
 
-#### User Endpoints
+## Themes
+Defined in `com.mindlog.model.NoteCluster` with rich descriptions to improve matching (e.g., Work stress, Romantic relationships, Excitement & anticipation, Debt & bills, Sleep problems, Random musings).
 
-- **Create User**
-  ```http
-  POST /api/users
-  ```
-  Request Body:
-  ```json
-  {
-      "username": "john_doe",
-      "email": "john@example.com",
-      "password": "password123"
-  }
-  ```
-
-- **Get User by Username**
-  ```http
-  GET /api/users/{username}
-  ```
-
-- **Get All Users**
-  ```http
-  GET /api/users
-  ```
-
-- **Update User**
-  ```http
-  PUT /api/users/{username}
-  ```
-  Request Body:
-  ```json
-  {
-      "email": "john_new@example.com",
-      "password": "newpassword123"
-  }
-  ```
-
-- **Delete User**
-  ```http
-  DELETE /api/users/{username}
-  ```
-
-#### Note Endpoints
-
-- **Create Note for User**
-  ```http
-  POST /api/Notes/{userName}
-  ```
-  Request Body:
-  ```json
-  {
-      "text": "Today was a good day!",
-      "moodRating": 4,
-      "date": "2023-10-15",
-      "user": {
-          "id": 1
-      }
-  }
-  ```
-
-- **Get Notes by User**
-  ```http
-  GET /api/Notes/{userName}
-  ```
-
-- **Get Notes by User and Date Range**
-  ```http
-  GET /api/Notes/user/{userId}/date-range?startDate=2023-10-01&endDate=2023-10-15
-  ```
-
-- **Delete Note**
-  ```http
-  DELETE /api/Notes/{NoteId}
-  ```
-
-- **Delete All Notes**
-  ```http
-  DELETE /api/Notes
-  ```
-
-- **Get User Notes Summary**
-  ```http
-  GET /api/Notes/{username}/summary
-  ```
+## Tech
+Spring Boot 3, Spring Web, JPA, PostgreSQL, Ollama embeddings.
 
 ## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+MIT (see `LICENSE`).
