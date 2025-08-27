@@ -2,6 +2,7 @@ package com.mindlog.service;
 
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
+import com.mindlog.model.NoteCluster;
 import com.mindlog.repository.NoteRepository;
 import com.mindlog.exception.BadCredentialsException;
 
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -21,10 +23,12 @@ public class NoteService {
 
     private final NoteRepository NoteRepository;
     private final UserService userService;
+    private final EmbeddingService embeddingService;
 
-    public NoteService(NoteRepository NoteRepository, UserService userService) {
+    public NoteService(NoteRepository NoteRepository, UserService userService, EmbeddingService embeddingService) {
         this.NoteRepository = NoteRepository;
         this.userService = userService;
+        this.embeddingService = embeddingService;
     }
 
     public List<Note> createNotesForUser(Long userId, List<Note> notes) {
@@ -37,8 +41,9 @@ public class NoteService {
             if (note.getText() == null || note.getText().isEmpty()) {
                 throw new BadCredentialsException("Note text cannot be empty");
             }
-            note.setUser(user);
+            note.setSubject(null);
             note.setDate(LocalDate.now());
+            note.setUser(user);
         }
 
         return NoteRepository.saveAll(notes);
@@ -50,6 +55,48 @@ public class NoteService {
 
     public List<Note> getNotesByUserIdAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
         return NoteRepository.findByUserAndDateBetween(user, startDate, endDate);
+    }
+
+    public List<String> listSubjectsByUserId(Long userId) {
+        return NoteRepository.findDistinctSubjectsByUserId(userId);
+    }
+
+    public List<Note> getNotesByUserIdAndSubject(Long userId, String subject) {
+        String normalized;
+        try {
+            normalized = NoteCluster.normalizeToLabelOrThrow(subject);
+        } catch (IllegalArgumentException ex) {
+            throw new BadCredentialsException(ex.getMessage());
+        }
+        return NoteRepository.findByUser_UserIdAndSubjectIgnoreCase(userId, normalized);
+    }
+
+    public int autoClusterUserNotes(Long userId) {
+        List<Note> notes = NoteRepository.findByUser_UserId(userId);
+        if (notes.isEmpty()) return 0;
+
+        // Embed richer theme descriptions once
+        List<String> themes = com.mindlog.model.NoteCluster.allLabels();
+        List<String> themeDescriptions = com.mindlog.model.NoteCluster.allDescriptions();
+        List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
+
+        // Embed each note and assign independently to the most similar theme
+        List<String> texts = notes.stream().map(Note::getText).collect(Collectors.toList());
+        List<float[]> noteEmbeddings = embeddingService.embedAll(texts);
+
+        for (int i = 0; i < notes.size(); i++) {
+            float[] vec = noteEmbeddings.get(i);
+            float best = Float.NEGATIVE_INFINITY;
+            int bestIdx = 0;
+            for (int t = 0; t < themeEmbeddings.size(); t++) {
+                float sim = com.mindlog.util.VectorUtils.cosine(vec, themeEmbeddings.get(t));
+                if (sim > best) { best = sim; bestIdx = t; }
+            }
+            notes.get(i).setSubject(themes.get(bestIdx));
+        }
+
+        NoteRepository.saveAll(notes);
+        return notes.size();
     }
 
     public void deleteNoteByIdAndUserId(Long userId, Long noteId) {

@@ -19,7 +19,10 @@ public class Note {
 
     @Column(nullable = false)
     private LocalDate date;
-
+    
+    @Column(nullable = true, length = 255)
+    private String subject;
+    
     @ManyToOne
     @JoinColumn(name = "userId", nullable = false)
     private User user;
@@ -29,9 +32,10 @@ public class Note {
     }
 
     // Parameterized constructor
-    public Note(String text, LocalDate date, User user) {
+    public Note(String text, LocalDate date, User user, String subject) {
         this.text = text;
         this.date = date;
+        this.subject = subject;
         this.user = user;
     }
 
@@ -60,6 +64,14 @@ public class Note {
         return user;
     }
 
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
     // toString() method (optional, for debugging)
     @Override
     public String toString() {
@@ -67,6 +79,7 @@ public class Note {
                 "id=" + id +
                 ", text='" + text + '\'' +
                 ", date=" + date +
+                ", subject='" + subject + '\'' +
                 ", user=" + user +
                 '}';
     }

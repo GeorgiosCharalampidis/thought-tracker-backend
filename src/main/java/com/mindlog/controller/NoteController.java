@@ -45,6 +45,31 @@ public class NoteController {
         return ResponseEntity.ok(Notes);
     }
 
+    @GetMapping("/{userId}/subjects")
+    public ResponseEntity<List<String>> listSubjects(@PathVariable Long userId) {
+        List<String> subjects = NoteService.listSubjectsByUserId(userId);
+        return ResponseEntity.ok(subjects);
+    }
+
+    @GetMapping("/{userId}/subject/{subject}")
+    public ResponseEntity<List<Note>> getNotesBySubject(
+            @PathVariable Long userId,
+            @PathVariable String subject) {
+        List<Note> notes = NoteService.getNotesByUserIdAndSubject(userId, subject);
+        return ResponseEntity.ok(notes);
+    }
+
+    @GetMapping("/subjects")
+    public ResponseEntity<List<String>> listAllowedSubjects() {
+        return ResponseEntity.ok(com.mindlog.model.NoteCluster.allLabels());
+    }
+
+    @PostMapping("/{userId}/auto-cluster")
+    public ResponseEntity<String> autoCluster(@PathVariable Long userId) {
+        int updated = NoteService.autoClusterUserNotes(userId);
+        return ResponseEntity.ok("Clustered and assigned subjects for " + updated + " notes.");
+    }
+
     @DeleteMapping("/{userId}/{noteId}")
     public ResponseEntity<Void> deleteNoteById(@PathVariable Long userId, @PathVariable Long noteId) {
         NoteService.deleteNoteByIdAndUserId(userId, noteId);

@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 @Repository
 public interface NoteRepository extends JpaRepository<Note, Long> {
@@ -15,4 +17,11 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     // Find Notes by user and date range
     List<Note> findByUserAndDateBetween(User user, LocalDate startDate, LocalDate endDate);
+
+    // Find notes by user and subject (case-insensitive match)
+    List<Note> findByUser_UserIdAndSubjectIgnoreCase(Long userId, String subject);
+
+    // List distinct subjects for a user
+    @Query("select distinct n.subject from Note n where n.user.userId = :userId and n.subject is not null")
+    List<String> findDistinctSubjectsByUserId(@Param("userId") Long userId);
 }
