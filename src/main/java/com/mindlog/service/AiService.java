@@ -1,64 +1,144 @@
 package com.mindlog.service;
 
+import com.mindlog.config.AiServiceConfig;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
 import org.springframework.web.client.RestTemplate;
-import java.nio.charset.StandardCharsets;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 @Service
 public class AiService {
-    private final RestTemplate restTemplate = new RestTemplate();
+    private static final Logger logger = LoggerFactory.getLogger(AiService.class);
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AiServiceConfig config;
 
-    public String getNotesFromDeepSeek(String inputPrompt) {
-        inputPrompt = "You are an AI that reads and responds to the user's daily Notes. " +
-                "Your goal is to engage with their ideas in a meaningful way, focusing on creating a conversation that feels real and personal rather than offering generic advice. " +
-                "Your responses should be Noteful and reflective, aiming to connect with the user’s emotions and Notes rather than simply providing solutions. " +
-                "To achieve this, you should:\n" +
-                "- Engage with the main themes or emotions the user expresses, not just summarizing but diving deeper into them with empathy.\n" +
-                "- Respond with depth, as if having a true discussion, encouraging reflection through Noteful exploration.\n" +
-                "- Offer insights or gentle challenges where necessary, but in a way that invites further reflection rather than presenting a quick solution.\n" +
-                "- Avoid clichés or overly positive encouragement unless it feels authentic to the moment and user’s experience.\n" +
-                "- Ask open-ended, Note-provoking questions that naturally extend the conversation and encourage introspection.\n\n" +
-                "The user does not expect structured self-improvement advice but rather meaningful engagement with their Notes. " +
-                "Your response should feel like a deep, personal conversation, one that feels alive and not pre-written.\n\n" +
-                "User's Input:\n" + inputPrompt;
+    public AiService(AiServiceConfig config) {
+        this.config = config;
+        this.restTemplate = createRestTemplate();
+    }
 
-        String url = "http://localhost:11434/api/chat";
+//    private RestTemplate createRestTemplate() {
+//        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+//        factory.setConnectTimeout(config.getTimeout());
+//        factory.setReadTimeout(config.getTimeout());
+//        return new RestTemplate(factory);
+//
+//    }
+
+     private RestTemplate createRestTemplate() {
+         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+         factory.setConnectTimeout(config.getTimeout());
+         factory.setReadTimeout(config.getTimeout());
+
+         RestTemplate restTemplate = new RestTemplate(factory);
+
+         // Configure message converters to handle UTF-8 properly
+         restTemplate.getMessageConverters().forEach(converter -> {
+             if (converter instanceof org.springframework.http.converter.StringHttpMessageConverter) {
+                 ((org.springframework.http.converter.StringHttpMessageConverter) converter).setDefaultCharset(java.nio.charset.StandardCharsets.UTF_8);
+             }
+         });
+
+         return restTemplate;
+     }
+
+    public String getNotesFromModel(String inputPrompt, String modelName) {
+        if (!config.isEnabled()) {
+            logger.warn("AI service is disabled in configuration");
+            throw new IllegalStateException("AI service is disabled. Please enable it in the configuration.");
+        }
+
+        String systemPrompt = "You are an AI that reads and responds to the user's daily notes. " +
+                "Be direct, honest, and human. Don't use therapeutic language or talk down to them. " +
+                "If something sounds concerning, say so directly. If they're being hard on themselves, call it out. " +
+                "If they're making progress, acknowledge it without being overly positive. " +
+                "Ask real questions that show you're actually thinking about what they wrote. " +
+                "Keep it conversational and avoid corporate or self-help speak. " +
+                "Don't be afraid to disagree or push back if something doesn't make sense. " +
+                "Be a real conversation partner, not a therapist. " +
+                "Use only standard ASCII characters - avoid smart quotes, em dashes, or other special Unicode characters.\n";
+
+        String url = config.getUrl() + "/api/chat";
+
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(new MediaType("application", "json", StandardCharsets.UTF_8));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Accept-Charset", "UTF-8");
 
         Map<String, Object> payload = Map.of(
-                "model", "deepseek-r1",
-                "messages", Collections.singletonList(Map.of("role", "user", "content", inputPrompt))
+                "model", modelName,
+                "messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", inputPrompt)
+                )
         );
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
-        ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, byte[].class);
 
-        if (response.getStatusCode().is2xxSuccessful()) {
-            try {
-                // Ensure UTF-8 encoding
-                String responseBody = new String(response.getBody(), StandardCharsets.UTF_8);
-                StringBuilder fullResponse = new StringBuilder();
+        try {
+            logger.info("Attempting to connect to Ollama service at: {}", url);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
 
-                for (String jsonChunk : responseBody.split("\n")) {
-                    JsonNode jsonNode = objectMapper.readTree(jsonChunk);
-                    if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
-                        fullResponse.append(jsonNode.get("message").get("content").asText());
+            if (response.getStatusCode().is2xxSuccessful()) {
+                try {
+                    StringBuilder fullResponse = new StringBuilder();
+                    String responseBody = response.getBody();
+
+                    for (String jsonChunk : responseBody.split("\n")) {
+                        if (jsonChunk.trim().isEmpty()) continue;
+                        JsonNode jsonNode = objectMapper.readTree(jsonChunk);
+                        if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
+                            String content = jsonNode.get("message").get("content").asText();
+                            fullResponse.append(content);
+                        }
                     }
+                    return fullResponse.toString();
+                } catch (Exception e) {
+                    logger.error("Failed to parse response from model: {}", e.getMessage());
+                    throw new RuntimeException("Failed to parse response from model", e);
                 }
-
-                // Remove everything between <think> and </think>, including the tags themselves (multiline support)
-                return fullResponse.toString().replaceAll("(?s)<think>.*?</think>", "").trim();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to parse response from DeepSeek", e);
+            } else {
+                logger.error("Failed to get response from model: {}", response.getStatusCode());
+                throw new RuntimeException("Failed to get response from model: " + response.getStatusCode());
             }
-        } else {
-            throw new RuntimeException("Failed to get response from DeepSeek: " + response.getStatusCode());
+        } catch (ResourceAccessException e) {
+            logger.error("Cannot connect to Ollama service: {}", e.getMessage());
+            throw new IllegalStateException("AI service is not available. Please ensure Ollama is running and accessible.");
+        } catch (HttpClientErrorException.NotFound e) {
+            logger.error("Model not found: {}", e.getMessage());
+            throw new IllegalStateException("AI model '" + modelName + "' not found. Please ensure the model is installed in Ollama.");
+        } catch (HttpClientErrorException | HttpServerErrorException e) {
+            logger.error("HTTP error from Ollama service: {} - {}", e.getStatusCode(), e.getMessage());
+            throw new IllegalStateException("AI service error: " + e.getStatusCode() + " - " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error while calling AI service: {}", e.getMessage());
+            throw new IllegalStateException("Unexpected error while calling AI service: " + e.getMessage());
+        }
+    }
+
+    public boolean isAiServiceAvailable() {
+        if (!config.isEnabled()) {
+            return false;
+        }
+
+        try {
+            String url = config.getUrl() + "/api/tags";
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            logger.warn("AI service health check failed: {}", e.getMessage());
+            return false;
         }
     }
 }

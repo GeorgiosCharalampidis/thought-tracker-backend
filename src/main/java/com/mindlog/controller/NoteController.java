@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -84,7 +86,6 @@ public class NoteController {
 
     @GetMapping("/{userId}/summary")
     public String getUserNotesSummary(@PathVariable Long userId) {
-        return userService.getDeepSeekNotes(userId);
+        return userService.getAiReflection(userId);
     }
-
 }
