@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -25,6 +23,12 @@ public class NoteController {
     }
 
     @PostMapping("/{userId}")
+    public ResponseEntity<Note> createNoteForUser(@PathVariable Long userId, @RequestBody Note note) {
+        List<Note> createdNotes = NoteService.createNotesForUser(userId, List.of(note));
+        return ResponseEntity.ok(createdNotes.get(0));
+    }
+
+    @PostMapping("/{userId}/batch")
     public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes) {
         List<Note> createdNotes = NoteService.createNotesForUser(userId, notes);
         return ResponseEntity.ok(createdNotes);
@@ -64,12 +68,6 @@ public class NoteController {
     @GetMapping("/subjects")
     public ResponseEntity<List<String>> listAllowedSubjects() {
         return ResponseEntity.ok(com.mindlog.model.NoteCluster.allLabels());
-    }
-
-    @PostMapping("/{userId}/auto-cluster")
-    public ResponseEntity<String> autoCluster(@PathVariable Long userId) {
-        int updated = NoteService.autoClusterUserNotes(userId);
-        return ResponseEntity.ok("Clustered and assigned subjects for " + updated + " notes.");
     }
 
     @DeleteMapping("/{userId}/{noteId}")

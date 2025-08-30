@@ -55,10 +55,6 @@ public class AiService {
      }
 
     public String getNotesFromModel(String inputPrompt, String modelName) {
-        if (!config.isEnabled()) {
-            logger.warn("AI service is disabled in configuration");
-            throw new IllegalStateException("AI service is disabled. Please enable it in the configuration.");
-        }
 
         String systemPrompt = "You are an AI that reads and responds to the user's daily notes. " +
                 "Be direct, honest, and human. Don't use therapeutic language or talk down to them. " +
@@ -128,9 +124,6 @@ public class AiService {
     }
 
     public boolean isAiServiceAvailable() {
-        if (!config.isEnabled()) {
-            return false;
-        }
 
         try {
             String url = config.getUrl() + "/api/tags";

@@ -12,8 +12,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -41,10 +41,10 @@ public class NoteService {
             if (note.getText() == null || note.getText().isEmpty()) {
                 throw new BadCredentialsException("Note text cannot be empty");
             }
-            note.setSubject(null);
             note.setDate(LocalDate.now());
             note.setUser(user);
         }
+        autoClusterUserNotes(notes);
 
         return NoteRepository.saveAll(notes);
     }
@@ -71,32 +71,32 @@ public class NoteService {
         return NoteRepository.findByUser_UserIdAndSubjectIgnoreCase(userId, normalized);
     }
 
-    public int autoClusterUserNotes(Long userId) {
-        List<Note> notes = NoteRepository.findByUser_UserId(userId);
-        if (notes.isEmpty()) return 0;
+    private String findBestMatchingTheme(String text, List<String> themes, List<float[]> themeEmbeddings) {
+        List<float[]> noteEmbedding = embeddingService.embedAll(Collections.singletonList(text));
+        float best = Float.NEGATIVE_INFINITY;
+        int bestIdx = 0;
+        float[] vec = noteEmbedding.get(0);
+        for (int t = 0; t < themeEmbeddings.size(); t++) {
+            float sim = com.mindlog.util.VectorUtils.cosine(vec, themeEmbeddings.get(t));
+            if (sim > best) {
+                best = sim;
+                bestIdx = t;
+            }
+        }
+        return themes.get(bestIdx);
+    }
 
+    private void autoClusterUserNotes(List<Note> notes) {
         // Embed richer theme descriptions once
-        List<String> themes = com.mindlog.model.NoteCluster.allLabels();
-        List<String> themeDescriptions = com.mindlog.model.NoteCluster.allDescriptions();
+        List<String> themes = NoteCluster.allLabels();
+        List<String> themeDescriptions = NoteCluster.allDescriptions();
         List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
 
-        // Embed each note and assign independently to the most similar theme
-        List<String> texts = notes.stream().map(Note::getText).collect(Collectors.toList());
-        List<float[]> noteEmbeddings = embeddingService.embedAll(texts);
-
-        for (int i = 0; i < notes.size(); i++) {
-            float[] vec = noteEmbeddings.get(i);
-            float best = Float.NEGATIVE_INFINITY;
-            int bestIdx = 0;
-            for (int t = 0; t < themeEmbeddings.size(); t++) {
-                float sim = com.mindlog.util.VectorUtils.cosine(vec, themeEmbeddings.get(t));
-                if (sim > best) { best = sim; bestIdx = t; }
-            }
-            notes.get(i).setSubject(themes.get(bestIdx));
+        for (Note note : notes) {
+            // Find the best matching theme
+            String bestTheme = findBestMatchingTheme(note.getText(), themes, themeEmbeddings);
+            note.setSubject(bestTheme);
         }
-
-        NoteRepository.saveAll(notes);
-        return notes.size();
     }
 
     public void deleteNoteByIdAndUserId(Long userId, Long noteId) {

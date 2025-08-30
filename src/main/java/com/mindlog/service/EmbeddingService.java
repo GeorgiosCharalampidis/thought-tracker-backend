@@ -32,7 +32,6 @@ public class EmbeddingService {
         for (String text : inputs) {
             Map<String, Object> payload = new HashMap<>();
             payload.put("model", DEFAULT_MODEL);
-            // Ollama expects 'prompt' for embeddings requests
             payload.put("prompt", text);
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);

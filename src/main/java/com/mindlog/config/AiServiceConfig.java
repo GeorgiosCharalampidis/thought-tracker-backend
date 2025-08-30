@@ -9,7 +9,6 @@ public class AiServiceConfig {
     
     private String url = "http://localhost:11434";
     private String model = "gemma3:4b";
-    private boolean enabled = true;
     private int timeout = 30000;
     private String tone = "direct";
     
@@ -29,15 +28,7 @@ public class AiServiceConfig {
     public void setModel(String model) {
         this.model = model;
     }
-    
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-    
+
     public int getTimeout() {
         return timeout;
     }
