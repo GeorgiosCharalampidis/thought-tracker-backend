@@ -32,6 +32,14 @@ public class NoteService {
     }
 
     public List<Note> createNotesForUser(Long userId, List<Note> notes) {
+        // Do not allow more than one note per user per day
+        /*
+        LocalDate today = LocalDate.now();
+        boolean exists = NoteRepository.findByUser_UserIdAndDate(userId, today).stream().findAny().isPresent();
+        if (exists) {
+            throw new BadCredentialsException("User with ID " + userId + " has already created a note for today");
+        }*/
+
         User user = userService.getUserById(userId);
         if (notes == null || notes.isEmpty()) {
             throw new BadCredentialsException("Note list cannot be empty");
@@ -47,6 +55,23 @@ public class NoteService {
         autoClusterUserNotes(notes);
 
         return NoteRepository.saveAll(notes);
+    }
+
+    public Note updateNoteForUser(Long userId, Long noteId, Note updatedNote) {
+        Note existingNote = NoteRepository.findByUser_UserId(userId)
+                .stream()
+                .filter(n -> n.getId().equals(noteId))
+                .findFirst()
+                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
+
+        if (updatedNote.getText() != null && !updatedNote.getText().isEmpty()) {
+            existingNote.setText(updatedNote.getText());
+        }
+
+        // Re-cluster the note if text was changed
+        autoClusterUserNotes(Collections.singletonList(existingNote));
+
+        return NoteRepository.save(existingNote);
     }
 
     public List<Note> getNotesByUserId(Long userId) {

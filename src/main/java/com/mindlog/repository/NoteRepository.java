@@ -15,6 +15,9 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     // Find all Notes by a specific user
     List<Note> findByUser_UserId(Long userId);
 
+    // Find notes by user and exact date
+    List<Note> findByUser_UserIdAndDate(Long userId, LocalDate date);
+
     // Find Notes by user and date range
     List<Note> findByUserAndDateBetween(User user, LocalDate startDate, LocalDate endDate);
 

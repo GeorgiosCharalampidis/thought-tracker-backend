@@ -56,6 +56,10 @@ public class Note {
         this.date = date;
     }
 
+    public void setText(String text) {
+        this.text = text;
+    }
+
     public LocalDate getDate() {
         return date;
     }

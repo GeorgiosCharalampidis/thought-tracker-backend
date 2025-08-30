@@ -28,6 +28,12 @@ public class NoteController {
         return ResponseEntity.ok(createdNotes.get(0));
     }
 
+    @PutMapping("/{userId}/{noteId}")
+    public ResponseEntity<Note> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note) {
+        Note updatedNote = NoteService.updateNoteForUser(userId, noteId, note);
+        return ResponseEntity.ok(updatedNote);
+    }
+
     @PostMapping("/{userId}/batch")
     public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes) {
         List<Note> createdNotes = NoteService.createNotesForUser(userId, notes);
