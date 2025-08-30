@@ -23,15 +23,23 @@ public class NoteController {
     }
 
     @PostMapping("/{userId}")
-    public ResponseEntity<Note> createNoteForUser(@PathVariable Long userId, @RequestBody Note note) {
+    public ResponseEntity<List<Note>> createNoteForUser(@PathVariable Long userId, @RequestBody Note note) {
         List<Note> createdNotes = NoteService.createNotesForUser(userId, List.of(note));
-        return ResponseEntity.ok(createdNotes.get(0));
+        if (createdNotes.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(createdNotes.get(0).getId());
+        return ResponseEntity.ok(notesOfSameSubject);
     }
 
     @PutMapping("/{userId}/{noteId}")
-    public ResponseEntity<Note> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note) {
+    public ResponseEntity<List<Note>> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note) {
         Note updatedNote = NoteService.updateNoteForUser(userId, noteId, note);
-        return ResponseEntity.ok(updatedNote);
+        if (updatedNote == null) {
+            return ResponseEntity.notFound().build();
+        }
+        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(updatedNote.getId());
+        return ResponseEntity.ok(notesOfSameSubject);
     }
 
     @PostMapping("/{userId}/batch")

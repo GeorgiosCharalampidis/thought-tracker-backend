@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -33,12 +34,11 @@ public class NoteService {
 
     public List<Note> createNotesForUser(Long userId, List<Note> notes) {
         // Do not allow more than one note per user per day
-        /*
         LocalDate today = LocalDate.now();
         boolean exists = NoteRepository.findByUser_UserIdAndDate(userId, today).stream().findAny().isPresent();
         if (exists) {
             throw new BadCredentialsException("User with ID " + userId + " has already created a note for today");
-        }*/
+        }
 
         User user = userService.getUserById(userId);
         if (notes == null || notes.isEmpty()) {
@@ -94,6 +94,21 @@ public class NoteService {
             throw new BadCredentialsException(ex.getMessage());
         }
         return NoteRepository.findByUser_UserIdAndSubjectIgnoreCase(userId, normalized);
+    }
+
+    public List<Note> getNotesOfSameSubject(Long noteId) {
+        Note note = NoteRepository.findById(noteId)
+                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
+        String subject = note.getSubject();
+        if (subject == null || subject.isEmpty()) {
+            throw new BadCredentialsException("Note with ID " + noteId + " has no subject");
+        }
+        logger.info("Fetching notes with subject: {}", subject);
+
+        return NoteRepository.findBySubject(subject)
+                .stream()
+                .filter(n -> !n.getId().equals(noteId))
+                .collect(Collectors.toList());
     }
 
     private String findBestMatchingTheme(String text, List<String> themes, List<float[]> themeEmbeddings) {
