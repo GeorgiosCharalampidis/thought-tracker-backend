@@ -1,0 +1,29 @@
+{
+  "name": "mindlog",
+  "version": "1.0.0",
+  "description": "MindLog - AI-powered mental health journaling app",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && ./mvnw spring-boot:run",
+    "dev:frontend": "cd frontend && npm start",
+    "install:all": "npm install && cd frontend && npm install",
+    "build": "cd backend && ./mvnw clean package && cd ../frontend && npm run build",
+    "clean": "cd backend && ./mvnw clean && cd ../frontend && npm run clean",
+    "test": "cd backend && ./mvnw test && cd ../frontend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "keywords": [
+    "mental-health",
+    "journaling",
+    "ai",
+    "spring-boot",
+    "react"
+  ],
+  "author": "MindLog Team",
+  "license": "MIT"
+}

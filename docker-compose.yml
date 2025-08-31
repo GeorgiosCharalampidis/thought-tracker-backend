@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/mood
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=123
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    networks:
+      - mindlog-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - mindlog-network
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=mood
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mindlog-network
+
+volumes:
+  postgres_data:
+
+networks:
+  mindlog-network:
+    driver: bridge
