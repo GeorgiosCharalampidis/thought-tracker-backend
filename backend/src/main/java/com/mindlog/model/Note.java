@@ -2,27 +2,35 @@ package com.mindlog.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
+@Getter
 @Entity
 @Table(name = "notes")
 public class Note {
 
+    // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Setter
     @Column(nullable = false, length = 5000)
     @Size(min = 1, max = 5000) // Limit text length
     private String text;
 
+    @Setter
     @Column(nullable = false)
     private LocalDate date;
     
+    @Setter
     @Column(nullable = true, length = 255)
     private String subject;
     
+    @Setter
     @ManyToOne
     @JoinColumn(name = "userId", nullable = false)
     private User user;
@@ -37,43 +45,6 @@ public class Note {
         this.date = date;
         this.subject = subject;
         this.user = user;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public String getSubject() {
-        return subject;
-    }
-
-    public void setSubject(String subject) {
-        this.subject = subject;
     }
 
     // toString() method (optional, for debugging)

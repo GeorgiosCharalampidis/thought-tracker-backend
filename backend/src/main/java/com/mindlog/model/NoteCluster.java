@@ -1,10 +1,13 @@
 package com.mindlog.model;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+@Getter
 public enum NoteCluster {
     WORK_AND_CAREER("Work & Career",
         "Job-related stress, deadlines, workload, difficult coworkers, office politics, burnout, " +
@@ -76,14 +79,6 @@ public enum NoteCluster {
     NoteCluster(String label, String description) {
         this.label = label;
         this.description = description;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public static List<String> allLabels() {
