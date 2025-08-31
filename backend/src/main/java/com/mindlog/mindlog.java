@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class mindLog {
+public class mindlog {
 
     public static void main(String[] args) {
-        SpringApplication.run(mindLog.class, args);
+        SpringApplication.run(mindlog.class, args);
     }
 
 }
