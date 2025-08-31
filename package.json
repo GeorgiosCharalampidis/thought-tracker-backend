@@ -4,7 +4,7 @@
   "description": "MindLog - AI-powered mental health journaling app",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && ./mvnw spring-boot:run",
+    "dev:backend": "cd backend && mvnw spring-boot:run",
     "dev:frontend": "cd frontend && npm start",
     "install:all": "npm install && cd frontend && npm install",
     "build": "cd backend && ./mvnw clean package && cd ../frontend && npm run build",
