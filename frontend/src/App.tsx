@@ -16,13 +16,18 @@ import {
   Fade,
   Slide,
   Avatar,
-  IconButton
+  IconButton,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
   Send as SendIcon,
   Psychology as PsychologyIcon,
   AutoAwesome as SparkleIcon,
-  LightbulbOutlined as LightbulbIcon
+  LightbulbOutlined as LightbulbIcon,
+  DarkMode as DarkModeIcon,
+  LightMode as LightModeIcon
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -38,13 +43,50 @@ interface AiInsight {
   loading: boolean;
 }
 
+// Create theme based on dark mode
+const createAppTheme = (isDarkMode: boolean) => createTheme({
+  palette: {
+    mode: isDarkMode ? 'dark' : 'light',
+    background: {
+      default: isDarkMode ? '#202120' : '#f1f5f9',
+      paper: isDarkMode ? '#2d2e2d' : '#ffffff',
+    },
+    text: {
+      primary: isDarkMode ? '#f1f5f9' : '#2d3748',
+      secondary: isDarkMode ? '#94a3b8' : '#4a5568',
+    },
+    primary: {
+      main: '#667eea',
+    },
+  },
+});
+
 function App() {
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [similarThoughts, setSimilarThoughts] = useState<Note[]>([]);
   const [showSimilarThoughts, setShowSimilarThoughts] = useState(false);
+  
+  // Auto-detect system theme preference
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
   const [aiInsight, setAiInsight] = useState<AiInsight>({ text: '', loading: false });
   const [loading, setLoading] = useState(false);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   const handleSubmit = async () => {
     if (!note.trim()) return;
@@ -91,20 +133,42 @@ function App() {
     loadNotes();
   }, []);
 
+  const theme = createAppTheme(isDarkMode);
+
   return (
+    <ThemeProvider theme={theme}>
       <Box sx={{
         flexGrow: 1,
         minHeight: '100vh',
-        backgroundColor: '#f1f5f9',
+        backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+        paddingTop: showSimilarThoughts ? '10vh' : '35vh',
+        display: showSimilarThoughts ? 'block' : 'block',
+        alignItems: showSimilarThoughts ? 'normal' : 'flex-start',
+        justifyContent: showSimilarThoughts ? 'normal' : 'center',
       }}>
-        <Box sx={{
-          flexGrow: 1,
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#f1f5f9',
+        {/* Dark Mode Toggle */}
+        <Box sx={{ 
+          position: 'fixed', 
+          top: 24, 
+          right: 24, 
+          zIndex: 1000 
         }}>
+          <IconButton
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            sx={{
+              backgroundColor: isDarkMode ? '#2d2e2d' : '#ffffff',
+              color: isDarkMode ? '#f1f5f9' : '#2d3748',
+              border: isDarkMode ? '1px solid #404140' : '1px solid #e2e8f0',
+              '&:hover': {
+                backgroundColor: isDarkMode ? '#404140' : '#f7fafc',
+              },
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
+        </Box>
+
           <Container maxWidth="lg">
             <Grid container spacing={4}>
               {/* Journal Entry */}
@@ -112,12 +176,11 @@ function App() {
                 <Fade in timeout={800}>
                   <Box sx={{ mb: 4 }}>
                     <Box display="flex" alignItems="center" justifyContent="center" mb={3}>
-                      <LightbulbIcon sx={{ mr: 2, color: '#667eea', fontSize: 28 }} />
                       <Typography
                           variant="h4"
                           sx={{
-                            fontWeight: 600,
-                            color: '#2d3748',
+                            fontWeight: 400,
+                            color: isDarkMode ? '#f1f5f9' : '#2d3748',
                           }}
                       >
                         Share a thought
@@ -125,13 +188,13 @@ function App() {
                     </Box>
 
                     <Box display="flex" justifyContent="center">
-                      <Box sx={{ position: 'relative', width: '100%', maxWidth: '600px' }}>
+                      <Box sx={{ position: 'relative', width: '100%', maxWidth: '800px' }}>
                         <TextField
                             fullWidth
                             multiline
                             maxRows={6}
                             variant="outlined"
-                            placeholder="What's crossing your mind today?"
+                            placeholder="What's up?"
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                             onKeyDown={(e) => {
@@ -143,23 +206,31 @@ function App() {
                             sx={{
                               mb: 3,
                               '& .MuiOutlinedInput-root': {
-                                borderRadius: 2,
+                                borderRadius: 12,
                                 fontSize: '1.1rem',
                                 lineHeight: 1.6,
-                                paddingRight: '60px', // Make space for the button
+                                paddingRight: '60px', // Make space for button + same padding as left
+                                paddingLeft: '24px', // Move text further from rounded edge
                                 minHeight: '56px', // Single line height
+                                backgroundColor: isDarkMode ? '#313130' : 'transparent',
+                                color: isDarkMode ? '#f1f5f9' : 'inherit',
+                                '& fieldset': {
+                                  borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
+                                },
                                 '&:hover fieldset': {
-                                  borderColor: '#667eea',
+                                  borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
                                 },
                                 '&.Mui-focused fieldset': {
-                                  borderColor: '#667eea',
-                                  borderWidth: 2,
+                                  borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
+                                  borderWidth: '1px', // Keep same width when focused
                                 },
                               },
                               '& .MuiInputBase-input': {
+                                color: isDarkMode ? '#f1f5f9' : 'inherit',
                                 '&::placeholder': {
                                   opacity: 0.7,
                                   fontStyle: 'italic',
+                                  color: isDarkMode ? '#888888' : 'inherit',
                                 },
                               },
                             }}
@@ -176,7 +247,7 @@ function App() {
                               minWidth: '44px',
                               width: '44px',
                               height: '44px',
-                              borderRadius: '8px',
+                              borderRadius: '48px',
                               backgroundColor: '#667eea',
                               padding: 0,
                               '&:hover': {
@@ -190,9 +261,12 @@ function App() {
                             }}
                         >
                           {loading ? (
-                              <CircularProgress size={20} sx={{ color: 'white' }} />
+                              <CircularProgress size={20} sx={{ color: '#93c5fd' }} />
                           ) : (
-                              <SendIcon sx={{ fontSize: 20 }} />
+                              <SendIcon sx={{ 
+                                fontSize: 20,
+                                transform: 'translateX(2px)'
+                              }} />
                           )}
                         </Button>
                       </Box>
@@ -280,14 +354,13 @@ function App() {
               {showSimilarThoughts && (
                   <Grid item xs={12}>
                     <Slide direction="up" in timeout={1000}>
-                      <Box>
+                      <Box sx={{ pb: 3 }}>
                         <Box display="flex" alignItems="center" mb={3}>
-                          <PsychologyIcon sx={{ mr: 2, color: '#667eea', fontSize: 28 }} />
                           <Typography
                               variant="h4"
                               sx={{
-                                fontWeight: 600,
-                                color: '#2d3748',
+                                fontWeight: 400,
+                                color: isDarkMode ? '#f1f5f9' : '#2d3748',
                               }}
                           >
                             You're not alone..
@@ -303,12 +376,12 @@ function App() {
                                       sx={{
                                         height: '100%',
                                         borderRadius: 2,
-                                        backgroundColor: '#ffffff',
-                                        border: '1px solid #e2e8f0',
+                                        backgroundColor: isDarkMode ? '#2d2e2d' : '#ffffff',
+                                        border: isDarkMode ? '1px solid #404140' : '1px solid #e2e8f0',
                                         transition: 'all 0.2s ease',
                                         '&:hover': {
                                           transform: 'translateY(-2px)',
-                                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                          boxShadow: isDarkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
                                         },
                                       }}
                                   >
@@ -317,7 +390,7 @@ function App() {
                                         <Typography
                                             variant="caption"
                                             sx={{
-                                              color: '#718096',
+                                              color: isDarkMode ? '#94a3b8' : '#718096',
                                               fontWeight: 500,
                                               fontSize: '0.85rem'
                                             }}
@@ -345,7 +418,7 @@ function App() {
                                           variant="body1"
                                           sx={{
                                             lineHeight: 1.6,
-                                            color: '#4a5568',
+                                            color: isDarkMode ? '#e2e8f0' : '#4a5568',
                                             fontSize: '1rem'
                                           }}
                                       >
@@ -363,8 +436,8 @@ function App() {
               )}
             </Grid>
           </Container>
-        </Box>
       </Box>
+    </ThemeProvider>
   );
 }
 
