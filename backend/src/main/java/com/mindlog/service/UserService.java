@@ -81,13 +81,7 @@ public class UserService {
         logger.info("Getting notes for user: {}", user.getUsername());
         StringBuilder NotesBuilder = new StringBuilder();
         user.getNotes().forEach(Note -> NotesBuilder.append(Note.getText()).append("\n"));
-        
-        // Check if AI service is available first
-        if (!aiService.isAiServiceAvailable()) {
-            logger.warn("AI service is not available, returning fallback response");
-            return generateFallbackReflection(user.getNotes());
-        }
-        
+
         try {
             return aiService.getNotesFromModel(NotesBuilder.toString(), config.getModel());
         } catch (IllegalStateException e) {

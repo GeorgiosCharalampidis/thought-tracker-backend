@@ -123,15 +123,4 @@ public class AiService {
         }
     }
 
-    public boolean isAiServiceAvailable() {
-
-        try {
-            String url = config.getUrl() + "/api/tags";
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-            return response.getStatusCode().is2xxSuccessful();
-        } catch (Exception e) {
-            logger.warn("AI service health check failed: {}", e.getMessage());
-            return false;
-        }
-    }
 }

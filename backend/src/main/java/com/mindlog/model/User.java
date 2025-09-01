@@ -19,7 +19,6 @@ import java.util.List;
 })
 public class User {
 
-    // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userId")
