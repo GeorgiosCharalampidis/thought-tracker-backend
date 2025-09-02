@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 
@@ -31,6 +33,14 @@ public class Note {
     private String subject;
     
     @Setter
+    @Column(nullable = true, length = 255)
+    private String subCategory;
+    
+    @Setter
+    @Column(name = "embedding", columnDefinition = "TEXT")
+    private String embeddingJson; // Store embedding as JSON string
+    
+    @Setter
     @ManyToOne
     @JoinColumn(name = "userId", nullable = false)
     private User user;
@@ -45,6 +55,32 @@ public class Note {
         this.date = date;
         this.subject = subject;
         this.user = user;
+    }
+
+    // Embedding utility methods
+    public void setEmbedding(float[] embedding) {
+        if (embedding == null) {
+            this.embeddingJson = null;
+            return;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            this.embeddingJson = mapper.writeValueAsString(embedding);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize embedding", e);
+        }
+    }
+
+    public float[] getEmbedding() {
+        if (embeddingJson == null || embeddingJson.isEmpty()) {
+            return null;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readValue(embeddingJson, float[].class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize embedding", e);
+        }
     }
 
     // toString() method (optional, for debugging)

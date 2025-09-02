@@ -4,6 +4,7 @@ import com.mindlog.service.NoteService;
 import com.mindlog.service.UserService;
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
+import com.mindlog.model.SubCategory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +29,7 @@ public class NoteController {
         if (createdNotes.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
-        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(createdNotes.get(0).getId());
+        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(userId, createdNotes.get(0).getId());
         return ResponseEntity.ok(notesOfSameSubject);
     }
 
@@ -38,7 +39,7 @@ public class NoteController {
         if (updatedNote == null) {
             return ResponseEntity.notFound().build();
         }
-        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(updatedNote.getId());
+        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(userId, noteId);
         return ResponseEntity.ok(notesOfSameSubject);
     }
 
@@ -79,9 +80,29 @@ public class NoteController {
         return ResponseEntity.ok(notes);
     }
 
+    @GetMapping("/{userId}/subject/{subject}/similar-to/{noteId}")
+    public ResponseEntity<List<Note>> getNotesBySubjectSimilarTo(
+            @PathVariable Long userId,
+            @PathVariable String subject,
+            @PathVariable Long noteId) {
+        List<Note> notes = NoteService.getNotesOfSameSubject(userId, noteId);
+        return ResponseEntity.ok(notes);
+    }
+
     @GetMapping("/subjects")
     public ResponseEntity<List<String>> listAllowedSubjects() {
         return ResponseEntity.ok(com.mindlog.model.NoteCluster.allLabels());
+    }
+
+    @GetMapping("/subjects/{subject}/subcategories")
+    public ResponseEntity<List<String>> listSubCategoriesForSubject(@PathVariable String subject) {
+        try {
+            String normalized = com.mindlog.model.NoteCluster.normalizeToLabelOrThrow(subject);
+            List<String> subCategories = SubCategory.getSubCategoryLabelsForParent(normalized);
+            return ResponseEntity.ok(subCategories);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping("/{userId}/{noteId}")

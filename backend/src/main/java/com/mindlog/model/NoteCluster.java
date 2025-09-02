@@ -9,69 +9,159 @@ import java.util.stream.Collectors;
 
 @Getter
 public enum NoteCluster {
-    WORK_AND_CAREER("Work & Career",
-        "Job-related stress, deadlines, workload, difficult coworkers, office politics, burnout, " +
-        "career aspirations, promotions, skills development, interviews, professional growth, career transitions."),
+    // Work & Career - More specific categories
+    WORK_STRESS("Work Stress & Burnout",
+        "Job pressure, overwhelming workload, deadlines, work-life balance struggles, exhaustion from work, " +
+        "feeling overwhelmed by responsibilities, burnout symptoms, work anxiety."),
+    
+    WORK_RELATIONSHIPS("Workplace Relationships",
+        "Difficult coworkers, office politics, team dynamics, conflicts with boss or colleagues, " +
+        "workplace communication issues, feeling unsupported at work."),
+    
+    CAREER_GROWTH("Career Development",
+        "Career aspirations, promotions, skills development, interviews, professional growth, " +
+        "job searching, career transitions, professional goals and achievements."),
 
-    MONEY_AND_FINANCES("Money & Finances",
-        "Budgeting, expenses, saving, debt repayment, loans, rent, bills, financial goals, income stability, " +
-        "financial anxiety, money-related stress, planning for financial decisions."),
+    // Financial - More specific categories
+    FINANCIAL_STRESS("Financial Stress & Anxiety",
+        "Money worries, financial anxiety, struggling to pay bills, debt stress, " +
+        "fear of financial instability, money-related panic or overwhelm."),
+    
+    FINANCIAL_PLANNING("Financial Planning & Goals",
+        "Budgeting, saving strategies, financial goals, investment planning, " +
+        "retirement planning, financial decision-making, money management."),
 
-    RELATIONSHIPS_ROMANTIC("Romantic Relationships",
-        "Dating, intimacy, communication with a partner, love, trust issues, breakups, emotional closeness, " +
-        "longing for companionship, relationship conflicts."),
+    // Relationships - More granular
+    ROMANTIC_RELATIONSHIPS("Romantic Relationships",
+        "Dating experiences, relationship dynamics, intimacy, communication with partner, " +
+        "love and affection, relationship conflicts, breakups, longing for romance."),
+    
+    FAMILY_DYNAMICS("Family Relationships",
+        "Parents, siblings, children, family conflicts, family responsibilities, " +
+        "generational differences, family support or lack thereof, caregiving."),
+    
+    FRIENDSHIPS("Friendships & Social Connections",
+        "Friend relationships, social activities, building new friendships, " +
+        "conflicts with friends, feeling supported or excluded socially."),
+    
+    SOCIAL_ANXIETY("Social Anxiety & Isolation",
+        "Fear of social situations, feeling awkward in groups, social performance anxiety, " +
+        "avoiding social events, difficulty connecting with others, social isolation."),
 
-    RELATIONSHIPS_FAMILY("Family",
-        "Parents, siblings, children, caregiving, family conflicts, family responsibilities, " +
-        "feeling supported or unsupported by family."),
+    // Mental Health - More specific
+    ANXIETY_WORRY("Anxiety & Overthinking",
+        "Worrying thoughts, fear of failure, overthinking situations, racing thoughts, " +
+        "rumination, nervous tension, anticipatory anxiety, general unease."),
+    
+    DEPRESSION_MOOD("Depression & Low Mood",
+        "Sadness, hopelessness, lack of motivation, emotional numbness, feeling empty, " +
+        "loss of interest in activities, negative self-talk, despair."),
+    
+    STRESS_OVERWHELM("Stress & Feeling Overwhelmed",
+        "Feeling overwhelmed by life, too much to handle, stress from multiple sources, " +
+        "pressure from various areas of life, feeling stretched thin."),
+    
+    SELF_ESTEEM("Self-Esteem & Self-Worth",
+        "Self-doubt, feeling inadequate, imposter syndrome, comparing self to others, " +
+        "confidence issues, self-criticism, feelings of worthlessness or pride, " +
+        "uncertainty about abilities, questioning decisions, feeling unsure about choices."),
+    
+    LONELINESS("Loneliness & Disconnection",
+        "Feeling alone, disconnected from others, wanting companionship, " +
+        "feeling misunderstood or invisible, emotional isolation."),
+    
+    POSITIVE_EMOTIONS("Joy & Positive Emotions",
+        "Happiness, gratitude, excitement, contentment, satisfaction, achievement, " +
+        "positive experiences, feeling blessed, moments of joy."),
 
-    RELATIONSHIPS_FRIENDS("Friendships & Social Life",
-        "Friends, socializing, building connections, conflicts with friends, peer pressure, support networks, " +
-        "feeling included or excluded in social circles."),
+    // Health & Wellness - More specific
+    PHYSICAL_HEALTH("Physical Health & Illness",
+        "Physical symptoms, illness, chronic conditions, doctor visits, health concerns, " +
+        "medical tests, pain, physical discomfort, health anxiety."),
+    
+    BODY_IMAGE("Body Image & Appearance",
+        "Concerns about physical appearance, body image issues, weight concerns, " +
+        "self-perception of looks, appearance-related anxiety or confidence."),
+    
+    FITNESS_EXERCISE("Fitness & Physical Activity",
+        "Workouts, exercise routines, sports, physical training, fitness goals, " +
+        "athletic performance, movement and physical activity, motivation for fitness, " +
+        "exercise enthusiasm, active lifestyle choices."),
+    
+    SLEEP_FATIGUE("Sleep & Energy Issues",
+        "Sleep problems, insomnia, fatigue, tiredness, sleep quality, " +
+        "difficulty falling asleep, restless nights, energy levels."),
+    
+    NUTRITION_EATING("Nutrition & Eating",
+        "Food choices, eating habits, nutrition concerns, diet, appetite changes, " +
+        "relationship with food, meal planning, healthy eating."),
 
-    MENTAL_HEALTH_ANXIETY("Anxiety & Worry",
-        "Worrying thoughts, fear of failure, overthinking, nervous tension, racing thoughts, rumination, " +
-        "panic-like feelings, general unease without clear cause."),
+    // Personal Development - More specific
+    HABITS_ROUTINE("Habits & Daily Routine",
+        "Building habits, morning routines, productivity systems, time management, " +
+        "routine establishment, habit tracking, daily structure."),
+    
+    LEARNING_GROWTH("Learning & Skill Development",
+        "Learning new skills, education, courses, reading, intellectual growth, " +
+        "knowledge acquisition, studying, personal development."),
+    
+    SPIRITUALITY_MEANING("Spirituality & Life Meaning",
+        "Spiritual practices, meditation, mindfulness, searching for purpose, " +
+        "existential questions, meaning of life, spiritual growth."),
+    
+    GOALS_ACHIEVEMENT("Goals & Achievement",
+        "Setting goals, working toward objectives, achievement and success, " +
+        "progress tracking, accomplishments, ambitions, life direction."),
 
-    MENTAL_HEALTH_DEPRESSION("Depression & Low Mood",
-        "Hopelessness, lack of motivation, fatigue, emptiness, negative self-talk, " +
-        "loss of interest in activities, sadness, apathy."),
+    MOTIVATION_ENERGY("Motivation & Energy Issues",
+        "Lack of motivation, losing interest in activities, don't feel like doing things anymore, " +
+        "low energy for pursuits, giving up on activities, not wanting to continue, " +
+        "feeling unmotivated, loss of drive, procrastination, avoiding activities."),
 
-    MENTAL_HEALTH_LONELINESS("Loneliness & Isolation",
-        "Feeling alone, disconnected from others, social isolation, wanting companionship, " +
-        "feeling misunderstood or invisible."),
+    SELF_DOUBT_UNCERTAINTY("Self-Doubt & Uncertainty",
+        "Questioning decisions, feeling uncertain about choices, not sure about paths, " +
+        "second-guessing yourself, uncertain about abilities, wavering on decisions, " +
+        "feeling unsure about directions, indecisiveness, confusion about what to do."),
 
-    MENTAL_HEALTH_POSITIVE("Positive Emotions",
-        "Gratitude, joy, excitement, anticipation, contentment, satisfaction, " +
-        "recognizing blessings, positive reflections and experiences."),
+    // Life Events & Transitions
+    MAJOR_LIFE_CHANGES("Major Life Transitions",
+        "Moving, marriage, divorce, job changes, major life decisions, " +
+        "significant life events, lifestyle changes, life transitions."),
+    
+    SEASONAL_WEATHER("Seasonal & Weather",
+        "Seasonal changes, weather effects on mood, seasonal depression, " +
+        "holiday feelings, seasonal activities, weather-related thoughts."),
 
-    HEALTH_PHYSICAL("Physical Health",
-        "Physical illness, symptoms, chronic conditions, doctor visits, health tests, " +
-        "personal well-being, nutrition, body image concerns."),
+    // Creative & Leisure
+    CREATIVITY_ARTS("Creativity & Artistic Expression",
+        "Art, writing, music, creative projects, artistic inspiration, " +
+        "creative blocks, self-expression through art, creative pursuits."),
+    
+    HOBBIES_INTERESTS("Hobbies & Personal Interests",
+        "Leisure activities, hobbies, personal interests, recreational pursuits, " +
+        "passion projects, fun activities, entertainment."),
+    
+    TECHNOLOGY_DIGITAL("Technology & Digital Life",
+        "Social media, screen time, digital overwhelm, technology frustrations, " +
+        "online experiences, digital habits, tech-related thoughts."),
 
-    FITNESS_AND_EXERCISE("Fitness & Exercise",
-        "Workouts, running, gym, training plans, exercise routines, healthy habits, physical activity, sports."),
+    // External World
+    NEWS_POLITICS("News & Political Events",
+        "Current events, politics, news consumption, political opinions, " +
+        "world events, social issues, civic engagement, political stress."),
+    
+    ENVIRONMENT_NATURE("Environment & Nature",
+        "Nature experiences, environmental concerns, outdoor activities, " +
+        "connection with nature, weather appreciation, environmental anxiety."),
 
-    SLEEP_AND_REST("Sleep & Rest",
-        "Insomnia, trouble falling asleep, waking up at night, poor sleep quality, fatigue, restorative rest."),
-
-    PERSONAL_GROWTH("Personal Growth & Meaning",
-        "Self-improvement, habits, productivity, discipline, routines, learning, spirituality, " +
-        "mindfulness, meditation, searching for purpose and meaning."),
-
-    LIFE_TRANSITIONS("Life Transitions",
-        "Major commitments, moving, marriage, career change, education decisions, lifestyle shifts, " +
-        "long-term choices that shape life direction."),
-
-    CREATIVITY_AND_HOBBIES("Creativity & Hobbies",
-        "Hobbies, passions, art, writing, music, coding projects, creative blocks, artistic inspiration, " +
-        "learning for fun, self-expression."),
-
-    EXTERNAL_WORLD("External World & Media",
-        "News, politics, global issues, economy, wars, disasters, climate change, social media fatigue, doomscrolling."),
-
+    // Catch-all
+    DAILY_OBSERVATIONS("Daily Life & Observations",
+        "Everyday experiences, mundane observations, daily routine thoughts, " +
+        "simple life moments, ordinary experiences, casual reflections."),
+    
     OPEN_REFLECTIONS("Open Reflections",
-        "General musings, stray thoughts, daydreams, philosophical reflections, and notes without a strong theme; fallback category.");
+        "General musings, stray thoughts, daydreams, philosophical reflections, " +
+        "abstract thinking, miscellaneous thoughts without specific theme.");
 
     private final String label;
     private final String description;
