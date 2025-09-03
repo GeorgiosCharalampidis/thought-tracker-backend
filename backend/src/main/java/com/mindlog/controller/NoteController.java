@@ -1,14 +1,17 @@
 package com.mindlog.controller;
 
+import com.mindlog.dto.SimilarThoughtsResponse;
 import com.mindlog.service.NoteService;
 import com.mindlog.service.UserService;
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
+import com.mindlog.model.Category;
 import com.mindlog.model.SubCategory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -24,27 +27,26 @@ public class NoteController {
     }
 
     @PostMapping("/{userId}")
-    public ResponseEntity<List<Note>> createNoteForUser(@PathVariable Long userId, @RequestBody Note note) {
-        List<Note> createdNotes = NoteService.createNotesForUser(userId, List.of(note));
-        if (createdNotes.isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(userId, createdNotes.get(0).getId());
-        return ResponseEntity.ok(notesOfSameSubject);
+    public ResponseEntity<SimilarThoughtsResponse> createNoteForUser(@PathVariable Long userId, @RequestBody Note note) {
+        SimilarThoughtsResponse response = NoteService.createNoteWithValidation(userId, note);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{userId}/{noteId}")
-    public ResponseEntity<List<Note>> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note) {
+    public ResponseEntity<SimilarThoughtsResponse> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note) {
         Note updatedNote = NoteService.updateNoteForUser(userId, noteId, note);
         if (updatedNote == null) {
             return ResponseEntity.notFound().build();
         }
-        List<Note> notesOfSameSubject = NoteService.getNotesOfSameSubject(userId, noteId);
-        return ResponseEntity.ok(notesOfSameSubject);
+        SimilarThoughtsResponse response = NoteService.getNotesOfSameSubject(userId, noteId);
+        return ResponseEntity.ok(response);
     }
 
+
+    // should fix this tomorrow
     @PostMapping("/{userId}/batch")
     public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes) {
+        userService.getUserById(userId);
         List<Note> createdNotes = NoteService.createNotesForUser(userId, notes);
         return ResponseEntity.ok(createdNotes);
     }
@@ -81,25 +83,28 @@ public class NoteController {
     }
 
     @GetMapping("/{userId}/subject/{subject}/similar-to/{noteId}")
-    public ResponseEntity<List<Note>> getNotesBySubjectSimilarTo(
+    public ResponseEntity<SimilarThoughtsResponse> getNotesBySubjectSimilarTo(
             @PathVariable Long userId,
             @PathVariable String subject,
             @PathVariable Long noteId) {
-        List<Note> notes = NoteService.getNotesOfSameSubject(userId, noteId);
-        return ResponseEntity.ok(notes);
+        SimilarThoughtsResponse response = NoteService.getNotesOfSameSubject(userId, noteId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/subjects")
     public ResponseEntity<List<String>> listAllowedSubjects() {
-        return ResponseEntity.ok(com.mindlog.model.NoteCluster.allLabels());
+        return ResponseEntity.ok(Category.allLabels());
     }
 
     @GetMapping("/subjects/{subject}/subcategories")
     public ResponseEntity<List<String>> listSubCategoriesForSubject(@PathVariable String subject) {
         try {
-            String normalized = com.mindlog.model.NoteCluster.normalizeToLabelOrThrow(subject);
-            List<String> subCategories = SubCategory.getSubCategoryLabelsForParent(normalized);
-            return ResponseEntity.ok(subCategories);
+            String normalized = Category.normalizeToLabelOrThrow(subject);
+            List<SubCategory> subCategories = SubCategory.getSubCategoriesForParent(normalized);
+            List<String> subCategoryLabels = subCategories.stream()
+                .map(SubCategory::getLabel)
+                .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(subCategoryLabels);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();
         }

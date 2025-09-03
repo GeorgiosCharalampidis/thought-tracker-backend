@@ -36,11 +36,19 @@ interface Note {
   text: string;
   date: string;
   subject: string;
+  subCategory?: string;
 }
 
 interface AiInsight {
   text: string;
   loading: boolean;
+}
+
+interface SimilarThoughtsResponse {
+  categoryMessage: string;
+  notes: Note[];
+  inputAccepted: boolean;
+  validationMessage?: string;
 }
 
 // Create theme based on dark mode
@@ -65,6 +73,8 @@ function App() {
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [similarThoughts, setSimilarThoughts] = useState<Note[]>([]);
+  const [categoryMessage, setCategoryMessage] = useState<string>('');
+  const [validationMessage, setValidationMessage] = useState<string>('');
   const [showSimilarThoughts, setShowSimilarThoughts] = useState(false);
   
   // Auto-detect system theme preference
@@ -99,10 +109,22 @@ function App() {
       });
 
       if (response.data) {
-        setNotes(prev => [...response.data]);
-        setSimilarThoughts(response.data); // Set similar thoughts from response
-        setShowSimilarThoughts(true); // Show similar thoughts section
-        setNote('');
+        const similarThoughtsResponse: SimilarThoughtsResponse = response.data;
+        
+        if (similarThoughtsResponse.inputAccepted) {
+          // Input was accepted - update similar thoughts and clear validation message
+          setSimilarThoughts(similarThoughtsResponse.notes);
+          setCategoryMessage(similarThoughtsResponse.categoryMessage);
+          setValidationMessage('');
+          setNote('');
+          
+          // Only show similar thoughts section if there are actually similar thoughts
+          setShowSimilarThoughts(similarThoughtsResponse.notes.length > 0);
+        } else {
+          // Input was rejected - only show validation message, keep existing thoughts
+          setValidationMessage(similarThoughtsResponse.validationMessage || 'Please try writing something more meaningful.');
+          // Don't update similarThoughts, categoryMessage, or clear the note
+        }
 
         /*
         // Get AI insight
@@ -124,6 +146,8 @@ function App() {
       setNotes(response.data);
       // Don't show similar thoughts on initial load
       setShowSimilarThoughts(false);
+      setCategoryMessage('');
+      setValidationMessage('');
     } catch (error) {
       console.error('Error loading notes:', error);
     }
@@ -196,7 +220,13 @@ function App() {
                             variant="outlined"
                             placeholder="What's up?"
                             value={note}
-                            onChange={(e) => setNote(e.target.value)}
+                            onChange={(e) => {
+                              setNote(e.target.value);
+                              // Clear validation message when user starts typing
+                              if (validationMessage) {
+                                setValidationMessage('');
+                              }
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
@@ -270,6 +300,24 @@ function App() {
                           )}
                         </Button>
                       </Box>
+                    </Box>
+                    
+                    {/* Validation Message - Reserve space to prevent layout shift */}
+                    <Box display="flex" justifyContent="center" mt={1} minHeight="24px">
+                      {validationMessage && (
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: isDarkMode ? '#a0a0a0' : '#666666',
+                            fontSize: '0.875rem',
+                            textAlign: 'center',
+                            maxWidth: '800px',
+                            fontStyle: 'italic',
+                          }}
+                        >
+                          {validationMessage}
+                        </Typography>
+                      )}
                     </Box>
                   </Box>
                 </Fade>
@@ -357,13 +405,13 @@ function App() {
                       <Box sx={{ pb: 3 }}>
                         <Box display="flex" alignItems="center" mb={3}>
                           <Typography
-                              variant="h4"
+                              variant="h5"
                               sx={{
                                 fontWeight: 400,
                                 color: isDarkMode ? '#f1f5f9' : '#2d3748',
                               }}
                           >
-                            You're not alone..
+                            {categoryMessage || "You're not alone.."}
                           </Typography>
                         </Box>
 
@@ -380,13 +428,12 @@ function App() {
                                         border: isDarkMode ? '1px solid #404140' : '1px solid #e2e8f0',
                                         transition: 'all 0.2s ease',
                                         '&:hover': {
-                                          transform: 'translateY(-2px)',
-                                          boxShadow: isDarkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
+                                          boxShadow: isDarkMode ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)',
                                         },
                                       }}
                                   >
                                     <CardContent sx={{ p: 3 }}>
-                                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                                         <Typography
                                             variant="caption"
                                             sx={{
@@ -401,18 +448,36 @@ function App() {
                                             day: 'numeric'
                                           })}
                                         </Typography>
-                                        <Chip
-                                            label={noteItem.subject}
-                                            size="small"
-                                            sx={{
-                                              background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                                              color: 'white',
-                                              fontWeight: 600,
-                                              '& .MuiChip-label': {
-                                                px: 1.5,
-                                              },
-                                            }}
-                                        />
+                                        <Box display="flex" flexDirection="column" gap={1} alignItems="flex-end">
+                                          <Chip
+                                              label={noteItem.subject}
+                                              size="small"
+                                              sx={{
+                                                background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                                                color: 'white',
+                                                fontWeight: 600,
+                                                '& .MuiChip-label': {
+                                                  px: 1.5,
+                                                },
+                                              }}
+                                          />
+                                          {noteItem.subCategory && (
+                                            <Chip
+                                                label={noteItem.subCategory}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{
+                                                  borderColor: isDarkMode ? '#667eea' : '#764ba2',
+                                                  color: isDarkMode ? '#667eea' : '#764ba2',
+                                                  fontWeight: 500,
+                                                  fontSize: '0.75rem',
+                                                  '& .MuiChip-label': {
+                                                    px: 1,
+                                                  },
+                                                }}
+                                            />
+                                          )}
+                                        </Box>
                                       </Box>
                                       <Typography
                                           variant="body1"

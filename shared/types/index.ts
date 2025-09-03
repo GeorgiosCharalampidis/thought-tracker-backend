@@ -5,6 +5,7 @@ export interface Note {
   text: string;
   date: string;
   subject: string;
+  subCategory?: string;
   user: User;
 }
 
@@ -18,6 +19,13 @@ export interface User {
 export interface AiInsight {
   text: string;
   loading: boolean;
+}
+
+export interface SimilarThoughtsResponse {
+  categoryMessage: string;
+  notes: Note[];
+  inputAccepted: boolean;
+  validationMessage?: string;
 }
 
 export interface NoteCluster {

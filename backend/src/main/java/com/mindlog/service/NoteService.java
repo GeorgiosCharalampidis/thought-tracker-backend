@@ -1,12 +1,15 @@
 package com.mindlog.service;
 
+import com.mindlog.dto.SimilarThoughtsResponse;
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
-import com.mindlog.model.NoteCluster;
+import com.mindlog.model.Category;
 import com.mindlog.model.SubCategory;
 import com.mindlog.repository.NoteRepository;
 import com.mindlog.exception.BadCredentialsException;
+import com.mindlog.util.TextValidator;
 
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
@@ -26,11 +29,63 @@ public class NoteService {
     private final NoteRepository NoteRepository;
     private final UserService userService;
     private final EmbeddingService embeddingService;
+    private final AiService aiService;
 
-    public NoteService(NoteRepository NoteRepository, UserService userService, EmbeddingService embeddingService) {
+    public NoteService(NoteRepository NoteRepository, UserService userService, EmbeddingService embeddingService, AiService aiService) {
         this.NoteRepository = NoteRepository;
         this.userService = userService;
         this.embeddingService = embeddingService;
+        this.aiService = aiService;
+    }
+
+    public SimilarThoughtsResponse createNoteWithValidation(Long userId, Note note) {
+
+        // Valid user check
+        userService.getUserById(userId);
+
+        // Not empty text check
+        if (note.getText() == null || note.getText().isEmpty()) {
+            return createInvalidInputResponse(userId, "Seems like you didn't share any thought.");
+        }
+
+        /*
+         * Use local text validation first, then AI validation as a secondary check
+         * If AI text validation fails (e.g. service down), we still have local validation result
+         */
+        boolean isValid = true;
+        isValid = TextValidator.isMeaningfulThought(note.getText());
+        if (!isValid) {
+            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getText()));
+        }
+        try {
+            isValid = aiService.isValidThought(note.getText());
+            logger.info("AI text validation result for '{}': {}", note.getText().substring(0, Math.min(50, note.getText().length())), isValid);
+        } catch (Exception e) {
+            logger.error("AI text validation failed {}, will proceed with local validation result: {}", e.getMessage(), isValid);
+        }
+        if (!isValid) {
+            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getText()));
+        }
+
+        // Input is valid, create the note
+        try {
+            Note createdNote = createNoteForUser(userId, note);
+            if (createdNote == null || createdNote.getId() == null) {
+                return createInvalidInputResponse(userId, "Failed to create note.");
+            }
+            return getNotesOfSameSubject(userId, createdNote.getId());
+        } catch (Exception e) {
+            return createInvalidInputResponse(userId, "Something went wrong. Please try again.");
+        }
+    }
+
+    public Note createNoteForUser(Long userId, Note note) {
+        User user = userService.getUserById(userId);
+        note.setDate(LocalDate.now());
+        note.setUser(user);
+        autoClusterUserNotes(Collections.singletonList(note));
+
+        return NoteRepository.save(note);
     }
 
     public List<Note> createNotesForUser(Long userId, List<Note> notes) {
@@ -66,6 +121,10 @@ public class NoteService {
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
 
         if (updatedNote.getText() != null && !updatedNote.getText().isEmpty()) {
+            // Validate that the updated text is a meaningful thought
+            if (!TextValidator.isMeaningfulThought(updatedNote.getText())) {
+                throw new BadCredentialsException(TextValidator.getValidationMessage(updatedNote.getText()));
+            }
             existingNote.setText(updatedNote.getText());
         }
 
@@ -90,7 +149,7 @@ public class NoteService {
     public List<Note> getNotesByUserIdAndSubject(Long userId, String subject) {
         String normalized;
         try {
-            normalized = NoteCluster.normalizeToLabelOrThrow(subject);
+            normalized = Category.normalizeToLabelOrThrow(subject);
         } catch (IllegalArgumentException ex) {
             throw new BadCredentialsException(ex.getMessage());
         }
@@ -98,7 +157,7 @@ public class NoteService {
         return orderNotesBySimilarity(notes);
     }
 
-    public List<Note> getNotesOfSameSubject(Long userId, Long noteId) {
+    public SimilarThoughtsResponse getNotesOfSameSubject(Long userId, Long noteId) {
         Note note = NoteRepository.findById(noteId)
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
         String subject = note.getSubject();
@@ -107,12 +166,33 @@ public class NoteService {
         }
         logger.info("Fetching notes with subject: {}", subject);
 
-        List<Note> sameSubjectNotes = NoteRepository.findBySubject(subject)
-                .stream()
-                .filter(n -> !n.getId().equals(noteId))
-                .collect(Collectors.toList());
+//        List<Note> sameSubjectNotes = NoteRepository.findBySubject(subject)
+//                .stream()
+//                .filter(n -> !n.getId().equals(noteId))
+//                .filter(n -> !n.getUser().getUserId().equals(userId))
+//                .collect(Collectors.toList());
 
-        return orderNotesBySimilarityToReference(sameSubjectNotes, note);
+        List<Note> sameSubjectNotes = NoteRepository.findBySubject(subject);
+
+        List<Note> orderedNotes = orderNotesBySimilarityToReference(sameSubjectNotes, note);
+
+        String categoryMessage = getCategoryMessage(orderedNotes);
+
+        return new SimilarThoughtsResponse(categoryMessage, orderedNotes);
+    }
+
+    private static @NotNull String getCategoryMessage(List<Note> orderedNotes) {
+        String categoryMessage;
+        if (orderedNotes.isEmpty()) {
+            categoryMessage = "You are the first one to share a thought like this..";
+        } else if (orderedNotes.size() == 1) {
+            categoryMessage = "Someone else has shared a similar thought..";
+        } else if (orderedNotes.size() <= 3) {
+            categoryMessage = String.format("%d others have shared similar thoughts..", orderedNotes.size());
+        } else {
+            categoryMessage = String.format("%d others have shared similar thoughts..", orderedNotes.size());
+        }
+        return categoryMessage;
     }
 
     private String findBestMatchingTheme(String text, List<String> themes, List<float[]> themeEmbeddings) {
@@ -130,10 +210,15 @@ public class NoteService {
         return themes.get(bestIdx);
     }
 
+    private SimilarThoughtsResponse createInvalidInputResponse(Long userId, String validationMessage) {
+        // Return empty list for invalid input - just show validation message
+        return new SimilarThoughtsResponse("", Collections.emptyList(), false, validationMessage);
+    }
+
     private void autoClusterUserNotes(List<Note> notes) {
         // Step 1: Main category clustering
-        List<String> themes = NoteCluster.allLabels();
-        List<String> themeDescriptions = NoteCluster.allDescriptions();
+        List<String> themes = Category.allLabels();
+        List<String> themeDescriptions = Category.allDescriptions();
         List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
 
         // Get embeddings for all note texts

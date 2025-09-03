@@ -1,6 +1,7 @@
 package com.mindlog.service;
 
 import com.mindlog.config.AiServiceConfig;
+import com.mindlog.util.TextValidator;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -120,6 +121,97 @@ public class AiService {
         } catch (Exception e) {
             logger.error("Unexpected error while calling AI service: {}", e.getMessage());
             throw new IllegalStateException("Unexpected error while calling AI service: " + e.getMessage());
+        }
+    }
+
+    public boolean isValidThought(String thoughtText) {
+        // Quick check - if AI service is not available, fall back immediately
+        try {
+            // Test if the service is reachable with a quick ping
+            restTemplate.getForEntity(config.getUrl() + "/api/tags", String.class);
+        } catch (Exception e) {
+            logger.warn("AI service not available, falling back to basic validation: {}", e.getMessage());
+            return TextValidator.isMeaningfulThought(thoughtText);
+        }
+
+        String systemPrompt = "You are a text validator for a personal reflection app. " +
+                "Respond with ONLY 'VALID' or 'INVALID' — nothing else. " +
+
+                "VALID: Any coherent statement, phrase, or sentence that conveys a personal experience, activity, event, thought, reflection, decision, concern, uncertainty, dilemma, judgment, self-description, or feeling. " +
+                "Even short or simple expressions (e.g., 'tired', 'feeling bad') are VALID if they clearly express a state or thought. " +
+
+                "INVALID: Pure greetings with no personal content, casual/social questions, test messages, gibberish, single words with no meaning (e.g., 'asdfgh'), incomplete fragments that cut off mid-thought, and dismissive responses like 'whatever'. " +
+
+                "Examples — VALID: 'I am such a bad person', 'tired', 'feeling stressed', 'argued with my boss', 'I don’t know how to ask my boss for more flexibility', 'thinking about quitting my job'. " +
+                "Examples — INVALID: 'hello', 'hey what's up', 'how are you', 'test', 'whatever', 'asdfgh', 'today I did'. " +
+
+                "Rule of thumb: Approve unless the message is obviously not a genuine personal expression.";
+
+
+        String url = config.getUrl() + "/api/chat";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Accept-Charset", "UTF-8");
+
+        Map<String, Object> payload = Map.of(
+                "model", config.getModel(),
+                "messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", thoughtText)
+                )
+        );
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
+
+        try {
+            logger.info("Validating thought with AI service at URL: {}", url);
+            logger.debug("Request payload: {}", payload);
+            
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+            
+            logger.info("AI validation response status: {}", response.getStatusCode());
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                try {
+                    StringBuilder fullResponse = new StringBuilder();
+                    String responseBody = response.getBody();
+
+                    for (String jsonChunk : responseBody.split("\n")) {
+                        if (jsonChunk.trim().isEmpty()) continue;
+                        JsonNode jsonNode = objectMapper.readTree(jsonChunk);
+                        if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
+                            String content = jsonNode.get("message").get("content").asText();
+                            fullResponse.append(content);
+                        }
+                    }
+                    
+                    String aiResponse = fullResponse.toString().trim().toUpperCase();
+                    return aiResponse.contains("VALID") && !aiResponse.contains("INVALID");
+                } catch (Exception e) {
+                    logger.error("Failed to parse validation response: {}", e.getMessage());
+                    // Fallback to basic validation if AI fails
+                    return TextValidator.isMeaningfulThought(thoughtText);
+                }
+            } else {
+                logger.error("Failed to get validation response: {}", response.getStatusCode());
+                // Fallback to basic validation if AI fails
+                return TextValidator.isMeaningfulThought(thoughtText);
+            }
+        } catch (Exception e) {
+            logger.error("Error during AI validation, falling back to basic validation: {}", e.getMessage());
+            // Fallback to basic validation if AI service is unavailable
+            return TextValidator.isMeaningfulThought(thoughtText);
+        }
+    }
+
+    public boolean isOllamaAvailable() {
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(config.getUrl() + "/api/tags", String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            logger.debug("Ollama availability check failed: {}", e.getMessage());
+            return false;
         }
     }
 
