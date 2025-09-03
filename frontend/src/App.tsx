@@ -236,7 +236,7 @@ function App() {
                             sx={{
                               mb: 3,
                               '& .MuiOutlinedInput-root': {
-                                borderRadius: 12,
+                                borderRadius: '28px !important', // Very round, pill-like edges
                                 fontSize: '1.1rem',
                                 lineHeight: 1.6,
                                 paddingRight: '60px', // Make space for button + same padding as left
@@ -246,6 +246,7 @@ function App() {
                                 color: isDarkMode ? '#f1f5f9' : 'inherit',
                                 '& fieldset': {
                                   borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
+                                  borderRadius: '28px !important', // Force fieldset radius too
                                 },
                                 '&:hover fieldset': {
                                   borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
@@ -272,11 +273,11 @@ function App() {
                             disabled={loading || !note.trim()}
                             sx={{
                               position: 'absolute',
-                              right: '8px',
-                              bottom: '32px', // Adjust based on your spacing
-                              minWidth: '44px',
-                              width: '44px',
-                              height: '44px',
+                              right: '12px', // Increased from 8px for better spacing
+                              bottom: '36px', // Adjusted to center better with text field
+                              minWidth: '36px',
+                              width: '36px',
+                              height: '36px',
                               borderRadius: '48px',
                               backgroundColor: '#667eea',
                               padding: 0,
@@ -291,11 +292,11 @@ function App() {
                             }}
                         >
                           {loading ? (
-                              <CircularProgress size={20} sx={{ color: '#93c5fd' }} />
+                              <CircularProgress size={16} sx={{ color: '#93c5fd' }} />
                           ) : (
                               <SendIcon sx={{ 
-                                fontSize: 20,
-                                transform: 'translateX(2px)'
+                                fontSize: 16,
+                                transform: 'translateX(1px)'
                               }} />
                           )}
                         </Button>
@@ -303,7 +304,7 @@ function App() {
                     </Box>
                     
                     {/* Validation Message - Reserve space to prevent layout shift */}
-                    <Box display="flex" justifyContent="center" mt={1} minHeight="24px">
+                    <Box display="flex" justifyContent="center" mt={1} minHeight="32px">
                       {validationMessage && (
                         <Typography
                           variant="body2"
@@ -426,10 +427,8 @@ function App() {
                                         borderRadius: 2,
                                         backgroundColor: isDarkMode ? '#2d2e2d' : '#ffffff',
                                         border: isDarkMode ? '1px solid #404140' : '1px solid #e2e8f0',
-                                        transition: 'all 0.2s ease',
-                                        '&:hover': {
-                                          boxShadow: isDarkMode ? '0 2px 8px rgba(0,0,0,0.2)' : '0 2px 8px rgba(0,0,0,0.08)',
-                                        },
+                                        userSelect: 'text',
+                                        cursor: 'default',
                                       }}
                                   >
                                     <CardContent sx={{ p: 3 }}>
