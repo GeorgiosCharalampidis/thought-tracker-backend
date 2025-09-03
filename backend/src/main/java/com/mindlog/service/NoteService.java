@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -43,8 +44,8 @@ public class NoteService {
         // Valid user check
         userService.getUserById(userId);
 
-        // Not empty text check
-        if (note.getText() == null || note.getText().isEmpty()) {
+        // Not empty content check
+        if (note.getContent() == null || note.getContent().isEmpty()) {
             return createInvalidInputResponse(userId, "Seems like you didn't share any thought.");
         }
 
@@ -53,18 +54,18 @@ public class NoteService {
          * If AI text validation fails (e.g. service down), we still have local validation result
          */
         boolean isValid = true;
-        isValid = TextValidator.isMeaningfulThought(note.getText());
+        isValid = TextValidator.isMeaningfulThought(note.getContent());
         if (!isValid) {
-            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getText()));
+            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getContent()));
         }
         try {
-            isValid = aiService.isValidThought(note.getText());
-            logger.info("AI text validation result for '{}': {}", note.getText().substring(0, Math.min(50, note.getText().length())), isValid);
+            isValid = aiService.isValidThought(note.getContent());
+            logger.info("AI text validation result for '{}': {}", note.getContent().substring(0, Math.min(50, note.getContent().length())), isValid);
         } catch (Exception e) {
             logger.error("AI text validation failed {}, will proceed with local validation result: {}", e.getMessage(), isValid);
         }
         if (!isValid) {
-            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getText()));
+            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getContent()));
         }
 
         // Input is valid, create the note
@@ -73,7 +74,7 @@ public class NoteService {
             if (createdNote == null || createdNote.getId() == null) {
                 return createInvalidInputResponse(userId, "Failed to create note.");
             }
-            return getNotesOfSameSubject(userId, createdNote.getId());
+            return getNotesOfSameCategory(userId, createdNote.getId());
         } catch (Exception e) {
             return createInvalidInputResponse(userId, "Something went wrong. Please try again.");
         }
@@ -91,7 +92,7 @@ public class NoteService {
     public List<Note> createNotesForUser(Long userId, List<Note> notes) {
         // Do not allow more than one note per user per day
 //        LocalDate today = LocalDate.now();
-//        boolean exists = NoteRepository.findByUser_UserIdAndDate(userId, today).stream().findAny().isPresent();
+//        boolean exists = NoteRepository.findByUser_IdAndDate(userId, today).stream().findAny().isPresent();
 //        if (exists) {
 //            throw new BadCredentialsException("User with ID " + userId + " has already created a note for today");
 //        }
@@ -102,8 +103,8 @@ public class NoteService {
         }
 
         for (Note note : notes) {
-            if (note.getText() == null || note.getText().isEmpty()) {
-                throw new BadCredentialsException("Note text cannot be empty");
+            if (note.getContent() == null || note.getContent().isEmpty()) {
+                throw new BadCredentialsException("Note content cannot be empty");
             }
             note.setDate(LocalDate.now());
             note.setUser(user);
@@ -114,28 +115,28 @@ public class NoteService {
     }
 
     public Note updateNoteForUser(Long userId, Long noteId, Note updatedNote) {
-        Note existingNote = NoteRepository.findByUser_UserId(userId)
+        Note existingNote = NoteRepository.findByUser_Id(userId)
                 .stream()
                 .filter(n -> n.getId().equals(noteId))
                 .findFirst()
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
 
-        if (updatedNote.getText() != null && !updatedNote.getText().isEmpty()) {
-            // Validate that the updated text is a meaningful thought
-            if (!TextValidator.isMeaningfulThought(updatedNote.getText())) {
-                throw new BadCredentialsException(TextValidator.getValidationMessage(updatedNote.getText()));
+        if (updatedNote.getContent() != null && !updatedNote.getContent().isEmpty()) {
+            // Validate that the updated content is a meaningful thought
+            if (!TextValidator.isMeaningfulThought(updatedNote.getContent())) {
+                throw new BadCredentialsException(TextValidator.getValidationMessage(updatedNote.getContent()));
             }
-            existingNote.setText(updatedNote.getText());
+            existingNote.setContent(updatedNote.getContent());
         }
 
-        // Re-cluster the note if text was changed
+        // Re-cluster the note if content was changed
         autoClusterUserNotes(Collections.singletonList(existingNote));
 
         return NoteRepository.save(existingNote);
     }
 
     public List<Note> getNotesByUserId(Long userId) {
-        return NoteRepository.findByUser_UserId(userId);
+        return NoteRepository.findByUser_Id(userId);
     }
 
     public List<Note> getNotesByUserIdAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
@@ -143,7 +144,7 @@ public class NoteService {
     }
 
     public List<String> listSubjectsByUserId(Long userId) {
-        return NoteRepository.findDistinctSubjectsByUserId(userId);
+        return NoteRepository.findDistinctCategoriesByUserId(userId);
     }
 
     public List<Note> getNotesByUserIdAndSubject(Long userId, String subject) {
@@ -153,28 +154,34 @@ public class NoteService {
         } catch (IllegalArgumentException ex) {
             throw new BadCredentialsException(ex.getMessage());
         }
-        List<Note> notes = NoteRepository.findByUser_UserIdAndSubjectIgnoreCase(userId, normalized);
+        List<Note> notes = NoteRepository.findByUser_IdAndCategoryIgnoreCase(userId, normalized);
         return orderNotesBySimilarity(notes);
     }
 
-    public SimilarThoughtsResponse getNotesOfSameSubject(Long userId, Long noteId) {
+    public SimilarThoughtsResponse getNotesOfSameCategory(Long userId, Long noteId) {
         Note note = NoteRepository.findById(noteId)
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
-        String subject = note.getSubject();
-        if (subject == null || subject.isEmpty()) {
-            throw new BadCredentialsException("Note with ID " + noteId + " has no subject");
+        String category = note.getCategory();
+        if (category == null || category.isEmpty()) {
+            throw new BadCredentialsException("Note with ID " + noteId + " has no category");
         }
-        logger.info("Fetching notes with subject: {}", subject);
+        logger.info("Fetching notes with category: {}", category);
 
-//        List<Note> sameSubjectNotes = NoteRepository.findBySubject(subject)
+//        List<Note> sameCategoryNotes = NoteRepository.findByCategory(category)
 //                .stream()
 //                .filter(n -> !n.getId().equals(noteId))
 //                .filter(n -> !n.getUser().getUserId().equals(userId))
 //                .collect(Collectors.toList());
 
-        List<Note> sameSubjectNotes = NoteRepository.findBySubject(subject);
+        List<Note> sameCategoryNotes = NoteRepository.findByCategory(category);
 
-        List<Note> orderedNotes = orderNotesBySimilarityToReference(sameSubjectNotes, note);
+        List<Note> orderedNotes = orderNotesBySimilarityToReference(sameCategoryNotes, note);
+
+        // Debug logging to see subcategory distribution
+        logger.info("Reference note subcategory: {}", note.getSubCategory());
+        orderedNotes.stream()
+            .collect(Collectors.groupingBy(Note::getSubCategory, Collectors.counting()))
+            .forEach((subCat, count) -> logger.info("Subcategory '{}': {} notes", subCat, count));
 
         String categoryMessage = getCategoryMessage(orderedNotes);
 
@@ -221,8 +228,8 @@ public class NoteService {
         List<String> themeDescriptions = Category.allDescriptions();
         List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
 
-        // Get embeddings for all note texts
-        List<String> noteTexts = notes.stream().map(Note::getText).collect(Collectors.toList());
+        // Get embeddings for all note content
+        List<String> noteTexts = notes.stream().map(Note::getContent).collect(Collectors.toList());
         List<float[]> noteEmbeddings = embeddingService.embedAll(noteTexts);
 
         for (int i = 0; i < notes.size(); i++) {
@@ -233,11 +240,11 @@ public class NoteService {
             note.setEmbedding(noteEmbedding);
             
             // Step 1: Find the best matching main theme
-            String bestTheme = findBestMatchingTheme(note.getText(), themes, themeEmbeddings);
-            note.setSubject(bestTheme);
+            String bestTheme = findBestMatchingTheme(note.getContent(), themes, themeEmbeddings);
+            note.setCategory(bestTheme);
             
             // Step 2: Find the best matching sub-category within that theme
-            String bestSubCategory = findBestSubCategory(note.getText(), bestTheme, noteEmbedding);
+            String bestSubCategory = findBestSubCategory(note.getContent(), bestTheme, noteEmbedding);
             note.setSubCategory(bestSubCategory);
         }
     }
@@ -271,7 +278,7 @@ public class NoteService {
     }
 
     public void deleteNoteByIdAndUserId(Long userId, Long noteId) {
-        Note note = NoteRepository.findByUser_UserId(userId)
+        Note note = NoteRepository.findByUser_Id(userId)
                 .stream()
                 .filter(n -> n.getId().equals(noteId))
                 .findFirst()
@@ -281,7 +288,7 @@ public class NoteService {
     }
 
     public void deleteNotesByUserId(Long userId) {
-        List<Note> notes = NoteRepository.findByUser_UserId(userId);
+        List<Note> notes = NoteRepository.findByUser_Id(userId);
         if (notes.isEmpty()) {
             throw new BadCredentialsException("No notes found for user with ID " + userId);
         }
@@ -311,6 +318,41 @@ public class NoteService {
                     
                     float sim1 = com.mindlog.util.VectorUtils.cosine(emb1, centroid);
                     float sim2 = com.mindlog.util.VectorUtils.cosine(emb2, centroid);
+                    return Float.compare(sim2, sim1); // Higher similarity first
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<Note> orderNotesBySubcategoryAndSimilarity(List<Note> notes, Note referenceNote) {
+        if (notes.size() <= 1) {
+            return notes;
+        }
+
+        String referenceSubCategory = referenceNote.getSubCategory();
+        float[] referenceEmbedding = referenceNote.getEmbedding();
+
+        // Sort by embedding similarity first, then apply small subcategory boost
+        return notes.stream()
+                .sorted((note1, note2) -> {
+                    float[] emb1 = note1.getEmbedding();
+                    float[] emb2 = note2.getEmbedding();
+                    
+                    if (emb1 == null && emb2 == null) return 0;
+                    if (emb1 == null) return 1; // Notes without embeddings go last
+                    if (emb2 == null) return -1;
+                    if (referenceEmbedding == null) return 0;
+                    
+                    float sim1 = com.mindlog.util.VectorUtils.cosine(emb1, referenceEmbedding);
+                    float sim2 = com.mindlog.util.VectorUtils.cosine(emb2, referenceEmbedding);
+                    
+                    // Small boost for same subcategory (but don't override major similarity differences)
+                    if (Objects.equals(note1.getSubCategory(), referenceSubCategory)) {
+                        sim1 += 0.05f; // Small boost
+                    }
+                    if (Objects.equals(note2.getSubCategory(), referenceSubCategory)) {
+                        sim2 += 0.05f; // Small boost  
+                    }
+                    
                     return Float.compare(sim2, sim1); // Higher similarity first
                 })
                 .collect(Collectors.toList());

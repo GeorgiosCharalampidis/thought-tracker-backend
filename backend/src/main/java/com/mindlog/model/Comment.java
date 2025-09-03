@@ -7,23 +7,23 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Getter
 @Entity
+@Table(name = "comments")
 public class Comment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "commentId")
     private Long id;
 
     @Setter
     @ManyToOne
-    @JoinColumn(name = "noteId", nullable = false)
-    @JsonBackReference
-    private Note note;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Setter
     @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
-    private User user;
+    @JoinColumn(name = "note_id", nullable = false)
+    @JsonBackReference
+    private Note note;
 
     @Setter
     private String text;
@@ -43,7 +43,7 @@ public class Comment {
                 "id=" + id +
                 ", text='" + text + '\'' +
                 ", noteId=" + (note != null ? note.getId() : null) +
-                ", userId=" + (user != null ? user.getUserId() : null) +
+                ", userId=" + (user != null ? user.getId() : null) +
                 '}';
     }
 }

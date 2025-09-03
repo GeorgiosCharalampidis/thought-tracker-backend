@@ -13,21 +13,21 @@ import java.util.List;
 @Repository
 public interface NoteRepository extends JpaRepository<Note, Long> {
     // Find all Notes by a specific user
-    List<Note> findByUser_UserId(Long userId);
+    List<Note> findByUser_Id(Long userId);
 
     // Find notes by user and exact date
-    List<Note> findByUser_UserIdAndDate(Long userId, LocalDate date);
+    List<Note> findByUser_IdAndDate(Long userId, LocalDate date);
 
     // Find Notes by user and date range
     List<Note> findByUserAndDateBetween(User user, LocalDate startDate, LocalDate endDate);
 
-    // Find notes by user and subject (case-insensitive match)
-    List<Note> findByUser_UserIdAndSubjectIgnoreCase(Long userId, String subject);
+    // Find notes by user and category (case-insensitive match)
+    List<Note> findByUser_IdAndCategoryIgnoreCase(Long userId, String category);
 
-    // Find notes by subject (case-insensitive match)
-    List<Note> findBySubject(String subject);
+    // Find notes by category (case-insensitive match)
+    List<Note> findByCategory(String category);
 
-    // List distinct subjects for a user
-    @Query("select distinct n.subject from Note n where n.user.userId = :userId and n.subject is not null")
-    List<String> findDistinctSubjectsByUserId(@Param("userId") Long userId);
+    // List distinct categories for a user
+    @Query("select distinct n.category from Note n where n.user.id = :userId and n.category is not null")
+    List<String> findDistinctCategoriesByUserId(@Param("userId") Long userId);
 }

@@ -38,7 +38,7 @@ public class CommentService {
         if (comment.getNote() == null || comment.getNote().getId() == null) {
             throw new IllegalArgumentException("Comment must be associated with a valid note");
         }
-        if (comment.getUser() == null || comment.getUser().getUserId() == null) {
+        if (comment.getUser() == null || comment.getUser().getId() == null) {
             throw new IllegalArgumentException("Comment must be associated with a valid user");
         }
         
@@ -47,8 +47,8 @@ public class CommentService {
             .orElseThrow(() -> new IllegalArgumentException("Note with ID " + comment.getNote().getId() + " not found"));
         
         // Verify that the user exists
-        User user = userRepository.findById(comment.getUser().getUserId())
-            .orElseThrow(() -> new UserNotFoundException("User with ID " + comment.getUser().getUserId() + " not found"));
+        User user = userRepository.findById(comment.getUser().getId())
+            .orElseThrow(() -> new UserNotFoundException("User with ID " + comment.getUser().getId() + " not found"));
 
         comment.setNote(note);
         comment.setUser(user);
@@ -60,14 +60,14 @@ public class CommentService {
         if (noteId == null) {
             throw new IllegalArgumentException("Note ID cannot be null");
         }
-        return commentRepository.findByNoteId(noteId);
+        return commentRepository.findByNote_Id(noteId);
     }
 
     public List<Comment> getCommentsByUserId(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID cannot be null");
         }
-        return commentRepository.findByUserId(userId);
+        return commentRepository.findByUser_Id(userId);
     }
 
     public Comment getCommentById(Long commentId) {
@@ -95,7 +95,7 @@ public class CommentService {
             throw new IllegalArgumentException("User ID cannot be null");
         }
 
-        List<Comment> comments = commentRepository.findByUserId(userId);
+        List<Comment> comments = commentRepository.findByUser_Id(userId);
         commentRepository.deleteAll(comments);
     }
 
@@ -104,7 +104,7 @@ public class CommentService {
             throw new IllegalArgumentException("Note ID cannot be null");
         }
 
-        List<Comment> comments = commentRepository.findByNoteId(noteId);
+        List<Comment> comments = commentRepository.findByNote_Id(noteId);
         commentRepository.deleteAll(comments);
     }
 

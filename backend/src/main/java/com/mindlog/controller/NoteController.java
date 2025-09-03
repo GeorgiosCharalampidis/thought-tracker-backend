@@ -37,7 +37,7 @@ public class NoteController {
         if (updatedNote == null) {
             return ResponseEntity.notFound().build();
         }
-        SimilarThoughtsResponse response = NoteService.getNotesOfSameSubject(userId, noteId);
+        SimilarThoughtsResponse response = NoteService.getNotesOfSameCategory(userId, noteId);
         return ResponseEntity.ok(response);
     }
 
@@ -86,7 +86,7 @@ public class NoteController {
             @PathVariable Long userId,
             @PathVariable String subject,
             @PathVariable Long noteId) {
-        SimilarThoughtsResponse response = NoteService.getNotesOfSameSubject(userId, noteId);
+        SimilarThoughtsResponse response = NoteService.getNotesOfSameCategory(userId, noteId);
         return ResponseEntity.ok(response);
     }
 

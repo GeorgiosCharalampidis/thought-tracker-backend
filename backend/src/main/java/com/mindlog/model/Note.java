@@ -20,13 +20,29 @@ public class Note {
     // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "noteId")
     private Long id;
 
     @Setter
     @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Setter
+    @Column(nullable = false, length = 5000)
+    @Size(min = 1, max = 5000) // Limit content length
+    private String content;
+
+    @Setter
+    @Column(nullable = true, length = 255)
+    private String category;
+
+    @Setter
+    @Column(nullable = true, length = 255)
+    private String subCategory;
+
+    @Setter
+    @Column(nullable = false)
+    private LocalDate date;
 
     @Setter
     @OneToMany(mappedBy = "note", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -34,22 +50,9 @@ public class Note {
     private List<Comment> comments = new ArrayList<>();
 
     @Setter
-    @Column(nullable = false, length = 5000)
-    @Size(min = 1, max = 5000) // Limit text length
-    private String text;
+    @Column(name = "comment_count")
+    private Integer commentCount;
 
-    @Setter
-    @Column(nullable = false)
-    private LocalDate date;
-    
-    @Setter
-    @Column(nullable = true, length = 255)
-    private String subject;
-    
-    @Setter
-    @Column(nullable = true, length = 255)
-    private String subCategory;
-    
     @Setter
     @Column(name = "embedding", columnDefinition = "TEXT")
     private String embeddingJson; // Store embedding as JSON string
@@ -60,10 +63,10 @@ public class Note {
     }
 
     // Parameterized constructor
-    public Note(String text, LocalDate date, User user, String subject) {
-        this.text = text;
+    public Note(String content, LocalDate date, User user, String category) {
+        this.content = content;
         this.date = date;
-        this.subject = subject;
+        this.category = category;
         this.user = user;
     }
 
@@ -98,9 +101,9 @@ public class Note {
     public String toString() {
         return "Note{" +
                 "id=" + id +
-                ", text='" + text + '\'' +
+                ", content='" + content + '\'' +
                 ", date=" + date +
-                ", subject='" + subject + '\'' +
+                ", category='" + category + '\'' +
                 ", user=" + user +
                 '}';
     }

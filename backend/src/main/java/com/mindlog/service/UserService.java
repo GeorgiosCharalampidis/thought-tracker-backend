@@ -55,10 +55,8 @@ public class UserService {
     }
 
     public User updateUser(Long userId, User userDetails) {
-        User user = userRepository.findByUserId(userId);
-        if (user == null) {
-            throw new UserNotFoundException("User not found!");
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + userId + " not found!"));
         user.validateCredentials();
         user.setEmail(userDetails.getEmail());
         user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
@@ -66,21 +64,17 @@ public class UserService {
     }
 
     public void deleteUser(Long userId) {
-        User user = userRepository.findByUserId(userId);
-        if (user == null) {
-            throw new UserNotFoundException("User not found!");
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + userId + " not found!"));
         userRepository.delete(user);
     }
 
     public String getAiReflection(Long userId) {
-        User user = userRepository.findByUserId(userId);
-        if (user == null) {
-            throw new UserNotFoundException("User not found!");
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + userId + " not found!"));
         logger.info("Getting notes for user: {}", user.getUsername());
         StringBuilder NotesBuilder = new StringBuilder();
-        user.getNotes().forEach(Note -> NotesBuilder.append(Note.getText()).append("\n"));
+        user.getNotes().forEach(Note -> NotesBuilder.append(Note.getContent()).append("\n"));
 
         try {
             return aiService.getNotesFromModel(NotesBuilder.toString(), config.getModel());
@@ -123,9 +117,9 @@ public class UserService {
         if (!recentNotes.isEmpty()) {
             reflection.append("\n📝 Recent Activity:\n");
             for (Note note : recentNotes) {
-                String preview = note.getText().length() > 100
-                    ? note.getText().substring(0, 100) + "..."
-                    : note.getText();
+                String preview = note.getContent().length() > 100
+                    ? note.getContent().substring(0, 100) + "..."
+                    : note.getContent();
                 reflection.append("- ").append(note.getDate())
                     .append(": ").append(preview).append("\n");
             }

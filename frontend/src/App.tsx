@@ -33,9 +33,9 @@ import axios from 'axios';
 
 interface Note {
   id: number;
-  text: string;
+  content: string;
   date: string;
-  subject: string;
+  category: string;
   subCategory?: string;
 }
 
@@ -105,7 +105,7 @@ function App() {
     try {
       // Create note
       const response = await axios.post('/api/notes/1', {
-        text: note
+        content: note
       });
 
       if (response.data) {
@@ -450,7 +450,7 @@ function App() {
                                       <Box display="flex" justifyContent="flex-start" alignItems="flex-start" mb={2}>
                                         <Box display="flex" flexDirection="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ marginLeft: '-6px' }}>
                                           <Chip
-                                              label={noteItem.subject}
+                                              label={noteItem.category}
                                               size="small"
                                               sx={{
                                                 background: 'linear-gradient(45deg, #667eea, #764ba2)',
@@ -487,7 +487,7 @@ function App() {
                                             fontSize: '1rem'
                                           }}
                                       >
-                                        {noteItem.text}
+                                        {noteItem.content}
                                       </Typography>
                                     </CardContent>
                                   </Card>
