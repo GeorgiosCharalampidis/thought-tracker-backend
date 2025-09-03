@@ -8,6 +8,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.ArrayList;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Getter
 @Entity
@@ -17,7 +20,18 @@ public class Note {
     // Getters and Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "noteId")
     private Long id;
+
+    @Setter
+    @ManyToOne
+    @JoinColumn(name = "userId", nullable = false)
+    private User user;
+
+    @Setter
+    @OneToMany(mappedBy = "note", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Comment> comments = new ArrayList<>();
 
     @Setter
     @Column(nullable = false, length = 5000)
@@ -39,11 +53,7 @@ public class Note {
     @Setter
     @Column(name = "embedding", columnDefinition = "TEXT")
     private String embeddingJson; // Store embedding as JSON string
-    
-    @Setter
-    @ManyToOne
-    @JoinColumn(name = "userId", nullable = false)
-    private User user;
+
 
     // Default constructor (required by JPA)
     public Note() {

@@ -194,7 +194,7 @@ function App() {
         </Box>
 
           <Container maxWidth="lg">
-            <Grid container spacing={4}>
+            <Grid container spacing={2}>
               {/* Journal Entry */}
               <Grid item xs={12}>
                 <Fade in timeout={800}>
@@ -404,26 +404,41 @@ function App() {
                   <Grid item xs={12}>
                     <Slide direction="up" in timeout={1000}>
                       <Box sx={{ pb: 3 }}>
-                        <Box display="flex" alignItems="center" mb={3}>
+                        <Box 
+                          display="flex" 
+                          flexDirection="column"
+                          alignItems="center"
+                          width="100%"
+                        >
+                          {/* Centered header */}
                           <Typography
                               variant="h5"
                               sx={{
                                 fontWeight: 400,
                                 color: isDarkMode ? '#f1f5f9' : '#2d3748',
+                                mb: 3,
+                                textAlign: 'center',
                               }}
                           >
                             {categoryMessage || "You're not alone.."}
                           </Typography>
-                        </Box>
 
-                        <Grid container spacing={3}>
+                          {/* Centered thoughts container */}
+                          <Box 
+                            display="flex" 
+                            flexWrap="wrap" 
+                            gap={3} 
+                            justifyContent="center"
+                            alignItems="flex-start"
+                          >
                           {similarThoughts.map((noteItem, index) => (
-                              <Grid item xs={12} md={6} key={noteItem.id}>
-                                <Fade in timeout={600 + index * 200}>
+                                <Fade in timeout={600 + index * 200} key={noteItem.id}>
                                   <Card
                                       elevation={1}
                                       sx={{
-                                        height: '100%',
+                                        minWidth: '200px',
+                                        maxWidth: '400px',
+                                        width: 'fit-content',
                                         borderRadius: 2,
                                         backgroundColor: isDarkMode ? '#2d2e2d' : '#ffffff',
                                         border: isDarkMode ? '1px solid #404140' : '1px solid #e2e8f0',
@@ -432,22 +447,8 @@ function App() {
                                       }}
                                   >
                                     <CardContent sx={{ p: 3 }}>
-                                      <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                              color: isDarkMode ? '#94a3b8' : '#718096',
-                                              fontWeight: 500,
-                                              fontSize: '0.85rem'
-                                            }}
-                                        >
-                                          {new Date(noteItem.date).toLocaleDateString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                          })}
-                                        </Typography>
-                                        <Box display="flex" flexDirection="column" gap={1} alignItems="flex-end">
+                                      <Box display="flex" justifyContent="flex-start" alignItems="flex-start" mb={2}>
+                                        <Box display="flex" flexDirection="row" gap={1} alignItems="center" flexWrap="wrap" sx={{ marginLeft: '-6px' }}>
                                           <Chip
                                               label={noteItem.subject}
                                               size="small"
@@ -491,9 +492,9 @@ function App() {
                                     </CardContent>
                                   </Card>
                                 </Fade>
-                              </Grid>
                           ))}
-                        </Grid>
+                          </Box>
+                        </Box>
                       </Box>
                     </Slide>
                   </Grid>
