@@ -9,9 +9,6 @@ import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +81,7 @@ public class AiService {
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
 
         try {
-            logger.info("Attempting to connect to Ollama service at: {}", url);
+            logger.info("Attempting to connect to AI service at: {}", url);
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -109,18 +106,9 @@ public class AiService {
                 logger.error("Failed to get response from model: {}", response.getStatusCode());
                 throw new RuntimeException("Failed to get response from model: " + response.getStatusCode());
             }
-        } catch (ResourceAccessException e) {
-            logger.error("Cannot connect to Ollama service: {}", e.getMessage());
-            throw new IllegalStateException("AI service is not available. Please ensure Ollama is running and accessible.");
-        } catch (HttpClientErrorException.NotFound e) {
-            logger.error("Model not found: {}", e.getMessage());
-            throw new IllegalStateException("AI model '" + modelName + "' not found. Please ensure the model is installed in Ollama.");
-        } catch (HttpClientErrorException | HttpServerErrorException e) {
-            logger.error("HTTP error from Ollama service: {} - {}", e.getStatusCode(), e.getMessage());
-            throw new IllegalStateException("AI service error: " + e.getStatusCode() + " - " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error while calling AI service: {}", e.getMessage());
-            throw new IllegalStateException("Unexpected error while calling AI service: " + e.getMessage());
+            logger.error("Error communicating with AI service: {}", e.getMessage());
+            throw new RuntimeException("Error communicating with AI service", e);
         }
     }
 
@@ -202,16 +190,6 @@ public class AiService {
             logger.error("Error during AI validation, falling back to basic validation: {}", e.getMessage());
             // Fallback to basic validation if AI service is unavailable
             return TextValidator.isMeaningfulThought(thoughtText);
-        }
-    }
-
-    public boolean isOllamaAvailable() {
-        try {
-            ResponseEntity<String> response = restTemplate.getForEntity(config.getUrl() + "/api/tags", String.class);
-            return response.getStatusCode().is2xxSuccessful();
-        } catch (Exception e) {
-            logger.debug("Ollama availability check failed: {}", e.getMessage());
-            return false;
         }
     }
 

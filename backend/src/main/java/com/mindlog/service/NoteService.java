@@ -1,6 +1,7 @@
 package com.mindlog.service;
 
 import com.mindlog.dto.SimilarThoughtsResponse;
+import com.mindlog.exception.MeaninglessThought;
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
 import com.mindlog.model.Category;
@@ -123,8 +124,15 @@ public class NoteService {
 
         if (updatedNote.getContent() != null && !updatedNote.getContent().isEmpty()) {
             // Validate that the updated content is a meaningful thought
-            if (!TextValidator.isMeaningfulThought(updatedNote.getContent())) {
-                throw new BadCredentialsException(TextValidator.getValidationMessage(updatedNote.getContent()));
+
+            boolean manualThoughtCheck = TextValidator.isMeaningfulThought(updatedNote.getContent());
+            boolean aiServiceThoughtCheck = aiService.isValidThought(updatedNote.getContent());
+
+            if (!manualThoughtCheck) {
+                throw new MeaninglessThought(TextValidator.getValidationMessage(updatedNote.getContent()));
+            }
+            if (!aiServiceThoughtCheck) {
+                throw new MeaninglessThought("Well the llm denies your thought :(");
             }
             existingNote.setContent(updatedNote.getContent());
         }
