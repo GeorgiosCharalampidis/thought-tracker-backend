@@ -74,6 +74,8 @@ public class UserService {
                 .orElseThrow(() -> new UserNotFoundException("User with ID " + userId + " not found!"));
         StringBuilder NotesBuilder = new StringBuilder();
         user.getNotes().forEach(Note -> NotesBuilder.append(Note.getContent()).append("\n"));
+        // Currently logging all the notes of the user, should change later
+        logger.trace("Compiling AI reflection for user ID: {} with {} notes", userId, NotesBuilder);
 
         try {
             return aiService.getNotesFromModel(NotesBuilder.toString(), config.getModel());

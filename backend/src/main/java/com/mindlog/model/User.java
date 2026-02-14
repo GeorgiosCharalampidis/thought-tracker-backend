@@ -30,16 +30,22 @@ public class User {
 
     @Setter
     @NotBlank
-    @Size(max = 50)
+    @Size(max = 40)
     @Email
     @Column(nullable = false, unique = true)
     private String email;
 
     @Setter
     @NotBlank
-    @Size(max = 120)
+    @Size(max = 40)
     @Column(nullable = false)
     private String password;
+
+    @Setter
+    @NotBlank
+    @Size(max = 20)
+    @Column(nullable = false)
+    private String authority;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -52,10 +58,11 @@ public class User {
     public User() {
     }
 
-    public User(String username, String email, String password) {
+    public User(String username, String email, String password, String authority) {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.authority = authority;
     }
 
     public void validateCredentials() {
@@ -67,6 +74,9 @@ public class User {
         }
         if (password == null || password.length() < 4) {
             throw new BadCredentialsException("Password must be at least 4 characters long");
+        }
+        if (authority == null || authority.isBlank() || authority.length() > 20) {
+            throw new BadCredentialsException("Invalid authority");
         }
     }
 
