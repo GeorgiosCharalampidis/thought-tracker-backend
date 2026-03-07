@@ -41,43 +41,39 @@ public class NoteService {
     }
 
     public SimilarThoughtsResponse createNoteWithValidation(Long userId, Note note) {
-
-        // Valid user check
         userService.getUserById(userId);
 
-        // Not empty content check
-        if (note.getContent() == null || note.getContent().isEmpty()) {
-            return createInvalidInputResponse(userId, "Seems like you didn't share any thought.");
+        String validationMessage = validateThoughtContent(note);
+        if (validationMessage != null) {
+            return createInvalidInputResponse(validationMessage);
         }
 
-        /*
-         * Use local text validation first, then AI validation as a secondary check
-         * If AI text validation fails (e.g. service down), we still have local validation result
-         */
-        boolean isValid = true;
-        isValid = TextValidator.isMeaningfulThought(note.getContent());
-        if (!isValid) {
-            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getContent()));
-        }
-        try {
-            isValid = aiService.isValidThought(note.getContent());
-            logger.info("AI text validation result for '{}': {}", note.getContent().substring(0, Math.min(50, note.getContent().length())), isValid);
-        } catch (Exception e) {
-            logger.error("AI text validation failed {}, will proceed with local validation result: {}", e.getMessage(), isValid);
-        }
-        if (!isValid) {
-            return createInvalidInputResponse(userId, TextValidator.getValidationMessage(note.getContent()));
-        }
-
-        // Input is valid, create the note
         try {
             Note createdNote = createNoteForUser(userId, note);
             if (createdNote == null || createdNote.getId() == null) {
-                return createInvalidInputResponse(userId, "Failed to create note.");
+                return createInvalidInputResponse("Failed to create note.");
             }
-            return getNotesOfSameCategory(userId, createdNote.getId());
+            return buildSimilarThoughtsResponse(createdNote);
         } catch (Exception e) {
-            return createInvalidInputResponse(userId, "Something went wrong. Please try again.");
+            return createInvalidInputResponse("Something went wrong. Please try again.");
+        }
+    }
+
+    public SimilarThoughtsResponse previewNoteWithValidation(Note note) {
+        String validationMessage = validateThoughtContent(note);
+        if (validationMessage != null) {
+            return createInvalidInputResponse(validationMessage);
+        }
+
+        try {
+            Note previewNote = new Note();
+            previewNote.setContent(note.getContent());
+            previewNote.setDate(LocalDate.now());
+            autoClusterUserNotes(Collections.singletonList(previewNote));
+            return buildSimilarThoughtsResponse(previewNote);
+        } catch (Exception e) {
+            logger.error("Failed to preview note similarity: {}", e.getMessage(), e);
+            return createInvalidInputResponse("Something went wrong. Please try again.");
         }
     }
 
@@ -169,30 +165,25 @@ public class NoteService {
     public SimilarThoughtsResponse getNotesOfSameCategory(Long userId, Long noteId) {
         Note note = NoteRepository.findById(noteId)
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
-        String category = note.getCategory();
+        return buildSimilarThoughtsResponse(note);
+    }
+
+    private SimilarThoughtsResponse buildSimilarThoughtsResponse(Note referenceNote) {
+        String category = referenceNote.getCategory();
         if (category == null || category.isEmpty()) {
-            throw new BadCredentialsException("Note with ID " + noteId + " has no category");
+            throw new BadCredentialsException("Note has no category");
         }
         logger.info("Fetching notes with category: {}", category);
 
-//        List<Note> sameCategoryNotes = NoteRepository.findByCategory(category)
-//                .stream()
-//                .filter(n -> !n.getId().equals(noteId))
-//                .filter(n -> !n.getUser().getUserId().equals(userId))
-//                .collect(Collectors.toList());
-
         List<Note> sameCategoryNotes = NoteRepository.findByCategory(category);
+        List<Note> orderedNotes = orderNotesBySimilarityToReference(sameCategoryNotes, referenceNote);
 
-        List<Note> orderedNotes = orderNotesBySimilarityToReference(sameCategoryNotes, note);
-
-        // Debug logging to see subcategory distribution
-        logger.info("Reference note subcategory: {}", note.getSubCategory());
+        logger.info("Reference note subcategory: {}", referenceNote.getSubCategory());
         orderedNotes.stream()
-            .collect(Collectors.groupingBy(Note::getSubCategory, Collectors.counting()))
-            .forEach((subCat, count) -> logger.info("Subcategory '{}': {} notes", subCat, count));
+                .collect(Collectors.groupingBy(Note::getSubCategory, Collectors.counting()))
+                .forEach((subCat, count) -> logger.info("Subcategory '{}': {} notes", subCat, count));
 
         String categoryMessage = getCategoryMessage(orderedNotes);
-
         return new SimilarThoughtsResponse(categoryMessage, orderedNotes);
     }
 
@@ -225,33 +216,51 @@ public class NoteService {
         return themes.get(bestIdx);
     }
 
-    private SimilarThoughtsResponse createInvalidInputResponse(Long userId, String validationMessage) {
-        // Return empty list for invalid input - just show validation message
+    private String validateThoughtContent(Note note) {
+        if (note == null || note.getContent() == null || note.getContent().isEmpty()) {
+            return "Seems like you didn't share any thought.";
+        }
+
+        boolean isValid = TextValidator.isMeaningfulThought(note.getContent());
+        if (!isValid) {
+            return TextValidator.getValidationMessage(note.getContent());
+        }
+
+        try {
+            isValid = aiService.isValidThought(note.getContent());
+            logger.info("AI text validation result for '{}': {}", note.getContent().substring(0, Math.min(50, note.getContent().length())), isValid);
+        } catch (Exception e) {
+            logger.error("AI text validation failed {}, will proceed with local validation result: {}", e.getMessage(), isValid);
+        }
+
+        if (!isValid) {
+            return TextValidator.getValidationMessage(note.getContent());
+        }
+
+        return null;
+    }
+
+    private SimilarThoughtsResponse createInvalidInputResponse(String validationMessage) {
         return new SimilarThoughtsResponse("", Collections.emptyList(), false, validationMessage);
     }
 
     private void autoClusterUserNotes(List<Note> notes) {
-        // Step 1: Main category clustering
         List<String> themes = Category.allLabels();
         List<String> themeDescriptions = Category.allDescriptions();
         List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
 
-        // Get embeddings for all note content
         List<String> noteTexts = notes.stream().map(Note::getContent).collect(Collectors.toList());
         List<float[]> noteEmbeddings = embeddingService.embedAll(noteTexts);
 
         for (int i = 0; i < notes.size(); i++) {
             Note note = notes.get(i);
             float[] noteEmbedding = noteEmbeddings.get(i);
-            
-            // Store the embedding in the note
+
             note.setEmbedding(noteEmbedding);
-            
-            // Step 1: Find the best matching main theme
+
             String bestTheme = findBestMatchingTheme(note.getContent(), themes, themeEmbeddings);
             note.setCategory(bestTheme);
-            
-            // Step 2: Find the best matching sub-category within that theme
+
             String bestSubCategory = findBestSubCategory(note.getContent(), bestTheme, noteEmbedding);
             note.setSubCategory(bestSubCategory);
         }
@@ -259,21 +268,20 @@ public class NoteService {
 
     private String findBestSubCategory(String text, String parentCategory, float[] noteEmbedding) {
         List<SubCategory> subCategories = SubCategory.getSubCategoriesForParent(parentCategory);
-        
+
         if (subCategories.isEmpty()) {
-            return "General"; // Fallback if no sub-categories defined
+            return "General";
         }
-        
-        // Get descriptions for sub-categories
+
         List<String> subDescriptions = subCategories.stream()
                 .map(SubCategory::getDescription)
                 .collect(Collectors.toList());
-        
+
         List<float[]> subEmbeddings = embeddingService.embedAll(subDescriptions);
-        
+
         float best = Float.NEGATIVE_INFINITY;
         int bestIdx = 0;
-        
+
         for (int i = 0; i < subEmbeddings.size(); i++) {
             float sim = com.mindlog.util.VectorUtils.cosine(noteEmbedding, subEmbeddings.get(i));
             if (sim > best) {
@@ -281,7 +289,7 @@ public class NoteService {
                 bestIdx = i;
             }
         }
-        
+
         return subCategories.get(bestIdx).getLabel();
     }
 

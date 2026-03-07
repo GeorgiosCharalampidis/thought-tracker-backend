@@ -25,26 +25,27 @@ public class User {
 
     @NotBlank
     @Size(max = 20)
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 20)
     private String username;
 
     @Setter
     @NotBlank
-    @Size(max = 40)
+    @Size(max = 120)
     @Email
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 120)
     private String email;
 
     @Setter
+    @JsonIgnore
     @NotBlank
-    @Size(max = 40)
-    @Column(nullable = false)
+    @Size(max = 100)
+    @Column(nullable = false, length = 100)
     private String password;
 
     @Setter
     @NotBlank
     @Size(max = 20)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'ROLE_USER'")
     private String authority;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -69,11 +70,11 @@ public class User {
         if (username == null || username.isBlank() || username.length() > 20) {
             throw new BadCredentialsException("Invalid username");
         }
-        if (email == null || !email.contains("@") || email.length() > 50) {
+        if (email == null || !email.contains("@") || email.length() > 120) {
             throw new BadCredentialsException("Invalid email address");
         }
-        if (password == null || password.length() < 4) {
-            throw new BadCredentialsException("Password must be at least 4 characters long");
+        if (password == null || password.length() < 4 || password.length() > 100) {
+            throw new BadCredentialsException("Password must be between 4 and 100 characters long");
         }
         if (authority == null || authority.isBlank() || authority.length() > 20) {
             throw new BadCredentialsException("Invalid authority");
@@ -86,7 +87,7 @@ public class User {
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
+                ", authority='" + authority + '\'' +
                 '}';
     }
 }

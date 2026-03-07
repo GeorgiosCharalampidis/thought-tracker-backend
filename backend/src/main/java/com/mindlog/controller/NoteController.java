@@ -8,6 +8,7 @@ import com.mindlog.model.User;
 import com.mindlog.model.Category;
 import com.mindlog.model.SubCategory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,14 +26,22 @@ public class NoteController {
         this.userService = userService;
     }
 
+    @PostMapping("/preview")
+    public ResponseEntity<SimilarThoughtsResponse> previewNote(@RequestBody Note note) {
+        SimilarThoughtsResponse response = NoteService.previewNoteWithValidation(note);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{userId}")
-    public ResponseEntity<SimilarThoughtsResponse> createNoteForUser(@PathVariable Long userId, @RequestBody Note note) {
+    public ResponseEntity<SimilarThoughtsResponse> createNoteForUser(@PathVariable Long userId, @RequestBody Note note, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         SimilarThoughtsResponse response = NoteService.createNoteWithValidation(userId, note);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{userId}/{noteId}")
-    public ResponseEntity<SimilarThoughtsResponse> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note) {
+    public ResponseEntity<SimilarThoughtsResponse> updateNoteForUser(@PathVariable Long userId, @PathVariable Long noteId, @RequestBody Note note, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         Note updatedNote = NoteService.updateNoteForUser(userId, noteId, note);
         if (updatedNote == null) {
             return ResponseEntity.notFound().build();
@@ -41,17 +50,16 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
-
-    // should fix this tomorrow
     @PostMapping("/{userId}/batch")
-    public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes) {
-        userService.getUserById(userId);
+    public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         List<Note> createdNotes = NoteService.createNotesForUser(userId, notes);
         return ResponseEntity.ok(createdNotes);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable Long userId, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         List<Note> Notes = NoteService.getNotesByUserId(userId);
         return ResponseEntity.ok(Notes);
     }
@@ -60,15 +68,16 @@ public class NoteController {
     public ResponseEntity<List<Note>> getNotesByUserAndDateRange(
             @PathVariable Long userId,
             @RequestParam LocalDate startDate,
-            @RequestParam LocalDate endDate) {
-        // Fetch user by ID
-        User user = userService.getUserById(userId);
+            @RequestParam LocalDate endDate,
+            Authentication authentication) {
+        User user = userService.requireAuthorizedUser(userId, authentication);
         List<Note> Notes = NoteService.getNotesByUserIdAndDateRange(user, startDate, endDate);
         return ResponseEntity.ok(Notes);
     }
 
     @GetMapping("/{userId}/subjects")
-    public ResponseEntity<List<String>> listSubjects(@PathVariable Long userId) {
+    public ResponseEntity<List<String>> listSubjects(@PathVariable Long userId, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         List<String> subjects = NoteService.listSubjectsByUserId(userId);
         return ResponseEntity.ok(subjects);
     }
@@ -76,7 +85,9 @@ public class NoteController {
     @GetMapping("/{userId}/subject/{subject}")
     public ResponseEntity<List<Note>> getNotesBySubject(
             @PathVariable Long userId,
-            @PathVariable String subject) {
+            @PathVariable String subject,
+            Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         List<Note> notes = NoteService.getNotesByUserIdAndSubject(userId, subject);
         return ResponseEntity.ok(notes);
     }
@@ -85,7 +96,9 @@ public class NoteController {
     public ResponseEntity<SimilarThoughtsResponse> getNotesBySubjectSimilarTo(
             @PathVariable Long userId,
             @PathVariable String subject,
-            @PathVariable Long noteId) {
+            @PathVariable Long noteId,
+            Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         SimilarThoughtsResponse response = NoteService.getNotesOfSameCategory(userId, noteId);
         return ResponseEntity.ok(response);
     }
@@ -110,19 +123,22 @@ public class NoteController {
     }
 
     @DeleteMapping("/{userId}/{noteId}")
-    public ResponseEntity<Void> deleteNoteById(@PathVariable Long userId, @PathVariable Long noteId) {
+    public ResponseEntity<Void> deleteNoteById(@PathVariable Long userId, @PathVariable Long noteId, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         NoteService.deleteNoteByIdAndUserId(userId, noteId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{userId}/all")
-    public ResponseEntity<Void> deleteNotesByUser(@PathVariable Long userId) {
+    public ResponseEntity<Void> deleteNotesByUser(@PathVariable Long userId, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         NoteService.deleteNotesByUserId(userId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{userId}/summary")
-    public String getUserNotesSummary(@PathVariable Long userId) {
+    public String getUserNotesSummary(@PathVariable Long userId, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
         return userService.getAiReflection(userId);
     }
 }

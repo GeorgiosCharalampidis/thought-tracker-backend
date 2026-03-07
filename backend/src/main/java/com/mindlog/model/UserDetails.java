@@ -14,5 +14,3 @@ public interface UserDetails extends Serializable {
         boolean isCredentialsNonExpired();
         boolean isEnabled();
 }
-
-

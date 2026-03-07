@@ -7,6 +7,7 @@ A modern web application that combines personal journaling with AI-powered insig
 - **Daily Journaling** - Write about your thoughts, feelings, and experiences
 - **AI-Powered Insights** - Get meaningful reflections on your entries using local AI (Ollama)
 - **Smart Categorization** - Automatic clustering of notes into meaningful themes
+- **User Accounts** - Register, log in, stay signed in, and keep journal data scoped to your own account
 - **Mental Health Tracking** - Visual patterns and trends over time
 - **Privacy-First** - All AI processing happens locally on your machine
 
@@ -91,7 +92,13 @@ npm run dev:backend    # Backend on http://localhost:8080
 npm run dev:frontend   # Frontend on http://localhost:3000
 ```
 
-### 5. Using Docker (Alternative)
+### 5. Sign In Flow
+
+1. Open the frontend at `http://localhost:3000`
+2. Create an account from the register tab or log in with an existing username/email and password
+3. After authentication, notes and AI reflections are loaded only for the signed-in user
+
+### 6. Using Docker (Alternative)
 
 ```bash
 # Run everything with Docker
@@ -122,16 +129,22 @@ The frontend automatically proxies API calls to the backend. No additional confi
 
 ## 📚 API Endpoints
 
+### Authentication
+- `POST /api/auth/register` - Create a new account and start an authenticated session
+- `POST /api/auth/login` - Log in with username or email plus password
+- `GET /api/auth/me` - Get the currently authenticated user
+- `POST /api/auth/logout` - End the current session
+
 ### Notes
-- `POST /api/notes/{userId}` - Create a new note
-- `GET /api/notes/{userId}` - Get all notes for a user
+- `POST /api/notes/{userId}` - Create a new note for the authenticated user
+- `GET /api/notes/{userId}` - Get all notes for the authenticated user
 - `PUT /api/notes/{userId}/{noteId}` - Update a note
 - `DELETE /api/notes/{userId}/{noteId}` - Delete a note
-- `GET /api/notes/{userId}/summary` - Get AI insights
+- `GET /api/notes/{userId}/summary` - Get AI insights for the authenticated user
 
 ### Users
-- `POST /api/users` - Create a new user
-- `GET /api/users/{userId}` - Get user details
+- `GET /api/users/me` - Get the current user profile
+- `GET /api/users/{userId}` - Get user details for the authenticated user
 
 ## 🧠 AI Features
 
@@ -207,7 +220,6 @@ If you encounter any issues:
 
 ## 🔮 Future Enhancements
 
-- [ ] User authentication and authorization
 - [ ] Mobile app (React Native)
 - [ ] Advanced analytics and charts
 - [ ] Export functionality
