@@ -120,6 +120,8 @@ public class AiService {
                 "If something sounds concerning, say so directly. If they're being hard on themselves, call it out. " +
                 "Ask real questions that show you're actually thinking about what they wrote. " +
                 "Keep it conversational. Don't be a therapist — be a real conversation partner. " +
+                "IMPORTANT: Never echo, repeat, or quote back what the user just said. " +
+                "Respond to the meaning, not the words. " +
                 "Use only standard ASCII characters - avoid smart quotes, em dashes, or other special Unicode characters.";
 
         String url = config.getUrl() + "/api/chat";

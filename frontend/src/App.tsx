@@ -703,6 +703,17 @@ function App() {
                 </Grid>
               )}
 
+              {showSimilarThoughts && (
+                <Grid item xs={12}>
+                  <SimilarThoughtsSection
+                    notes={similarThoughts}
+                    categoryMessage={categoryMessage}
+                    isDarkMode={isDarkMode}
+                    onShareAnotherThought={handleShareAnotherThought}
+                  />
+                </Grid>
+              )}
+
               {chatOpen && (
                 <Grid item xs={12}>
                   <AiChatPanel
@@ -714,17 +725,6 @@ function App() {
                       setChatOpen(false);
                       setChatMessages([]);
                     }}
-                  />
-                </Grid>
-              )}
-
-              {showSimilarThoughts && (
-                <Grid item xs={12}>
-                  <SimilarThoughtsSection
-                    notes={similarThoughts}
-                    categoryMessage={categoryMessage}
-                    isDarkMode={isDarkMode}
-                    onShareAnotherThought={handleShareAnotherThought}
                   />
                 </Grid>
               )}

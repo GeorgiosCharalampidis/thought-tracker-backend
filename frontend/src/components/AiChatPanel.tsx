@@ -5,7 +5,6 @@ import {
   Fade,
   IconButton,
   Paper,
-  Slide,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -73,11 +72,15 @@ const renderMessageContent = (text: string, isDarkMode: boolean) => {
 
 function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: AiChatPanelProps) {
   const [input, setInput] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Scroll within the container only — never touches the page scroll
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scrollContainerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages, loading]);
 
   const handleSend = () => {
@@ -97,7 +100,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
   const isEmpty = messages.length === 0;
 
   return (
-    <Slide direction="up" in timeout={400}>
+    <Fade in timeout={250}>
       <Paper
         elevation={0}
         sx={{
@@ -144,41 +147,50 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
           </Tooltip>
         </Box>
 
-        {/* Message list */}
+        {/* Message list — scrolls internally, never touches the page */}
         <Box
+          ref={scrollContainerRef}
           sx={{
-            flex: 1,
             overflowY: 'auto',
+            overflowX: 'hidden',
             px: 2.5,
             py: 2,
-            minHeight: 200,
             maxHeight: 480,
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
+            // Thin, subtle scrollbar that blends with the app style
+            '&::-webkit-scrollbar': { width: '4px' },
+            '&::-webkit-scrollbar-track': { background: 'transparent' },
+            '&::-webkit-scrollbar-thumb': {
+              background: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+              borderRadius: '4px',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: isDarkMode ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)',
+            },
           }}
         >
-          {isEmpty && !loading && (
-            <Fade in timeout={600}>
-              <Box display="flex" alignItems="center" gap={1.25}>
-                <CircularProgress size={18} sx={{ color: '#667eea' }} />
-                <Typography
-                  sx={{
-                    color: isDarkMode ? '#a0aec0' : '#718096',
-                    fontStyle: 'italic',
-                    fontSize: '0.95rem',
-                  }}
-                >
-                  Analyzing your thoughts...
-                </Typography>
-              </Box>
-            </Fade>
+          {/* Initial loading state — only shown before first message arrives */}
+          {isEmpty && loading && (
+            <Box display="flex" alignItems="center" gap={1.25} py={0.5}>
+              <CircularProgress size={16} sx={{ color: '#667eea' }} />
+              <Typography
+                sx={{
+                  color: isDarkMode ? '#a0aec0' : '#718096',
+                  fontStyle: 'italic',
+                  fontSize: '0.93rem',
+                }}
+              >
+                Analyzing your thoughts...
+              </Typography>
+            </Box>
           )}
 
           {messages.map((msg, idx) => {
             if (msg.role === 'assistant') {
               return (
-                <Fade in timeout={500} key={idx}>
+                <Fade in timeout={400} key={idx}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {renderMessageContent(msg.content, isDarkMode)}
                   </Box>
@@ -186,7 +198,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               );
             }
             return (
-              <Fade in timeout={300} key={idx}>
+              <Fade in timeout={200} key={idx}>
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <Box
                     sx={{
@@ -217,15 +229,16 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
             );
           })}
 
-          {loading && messages.length > 0 && (
-            <Fade in timeout={400}>
+          {/* Follow-up loading indicator — only shown after at least one message */}
+          {loading && !isEmpty && (
+            <Fade in timeout={300}>
               <Box display="flex" alignItems="center" gap={1}>
-                <CircularProgress size={14} sx={{ color: '#667eea' }} />
+                <CircularProgress size={13} sx={{ color: '#667eea' }} />
                 <Typography
                   sx={{
                     color: isDarkMode ? '#a0aec0' : '#718096',
                     fontStyle: 'italic',
-                    fontSize: '0.88rem',
+                    fontSize: '0.87rem',
                   }}
                 >
                   Thinking...
@@ -233,8 +246,6 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               </Box>
             </Fade>
           )}
-
-          <div ref={bottomRef} />
         </Box>
 
         {/* Input area */}
@@ -294,7 +305,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
           </Tooltip>
         </Box>
       </Paper>
-    </Slide>
+    </Fade>
   );
 }
 
