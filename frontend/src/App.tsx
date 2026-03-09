@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Container,
   Box,
@@ -84,6 +84,7 @@ function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const chatAbortRef = useRef<AbortController | null>(null);
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -246,12 +247,20 @@ function App() {
   };
 
   const sendChatMessageForUser = async (user: AuthUser, messages: ChatMessage[]) => {
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = new AbortController();
+
     setChatLoading(true);
     try {
-      const response = await axios.post<string>(`/api/notes/${user.id}/chat`, { messages });
+      const response = await axios.post<string>(
+        `/api/notes/${user.id}/chat`,
+        { messages },
+        { signal: chatAbortRef.current.signal },
+      );
       const aiMessage: ChatMessage = { role: 'assistant', content: response.data };
       setChatMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
+      if (axios.isCancel(error)) return;
       console.error('Error in chat:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         setChatOpen(false);

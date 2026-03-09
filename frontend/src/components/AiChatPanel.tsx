@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
-  CircularProgress,
   Fade,
   IconButton,
   Paper,
@@ -70,20 +69,78 @@ const renderMessageContent = (text: string, isDarkMode: boolean) => {
 
 function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPanelProps) {
   const [input, setInput] = useState('');
-
+  const [displayTexts, setDisplayTexts] = useState<Record<number, string>>({});
+  const [animatingIdx, setAnimatingIdx] = useState<number>(-1);
+  const [dots, setDots] = useState('');
+  const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to the bottom of the page whenever messages update or loading changes
+  // Animated dots while loading
+  useEffect(() => {
+    if (!loading) {
+      setDots('');
+      return;
+    }
+    const interval = setInterval(() => {
+      setDots((d) => (d.length >= 3 ? '' : d + '.'));
+    }, 380);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  // Scroll to bottom on loading state change (shows thinking indicator)
   useEffect(() => {
     const timer = setTimeout(() => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }, 80);
     return () => clearTimeout(timer);
-  }, [messages, loading]);
+  }, [loading]);
+
+  // Chunk-reveal effect for new assistant messages
+  useEffect(() => {
+    // Complete any in-progress animation immediately when messages change
+    if (animRef.current) {
+      clearTimeout(animRef.current);
+      animRef.current = null;
+    }
+    if (animatingIdx >= 0 && animatingIdx < messages.length) {
+      setDisplayTexts((prev) => ({ ...prev, [animatingIdx]: messages[animatingIdx].content }));
+      setAnimatingIdx(-1);
+    }
+
+    const lastIdx = messages.length - 1;
+    if (lastIdx < 0) return;
+
+    const lastMsg = messages[lastIdx];
+    if (lastMsg.role !== 'assistant') return;
+
+    const fullText = lastMsg.content;
+    const words = fullText.split(' ');
+    let wordIndex = 0;
+    setAnimatingIdx(lastIdx);
+
+    const tick = () => {
+      const chunkSize = Math.floor(Math.random() * 16) + 12; // 12–27 words
+      wordIndex = Math.min(wordIndex + chunkSize, words.length);
+      setDisplayTexts((prev) => ({ ...prev, [lastIdx]: words.slice(0, wordIndex).join(' ') }));
+      window.scrollTo({ top: document.body.scrollHeight });
+
+      if (wordIndex < words.length) {
+        const delay = Math.floor(Math.random() * 350) + 250; // 250–600ms
+        animRef.current = setTimeout(tick, delay);
+      } else {
+        setAnimatingIdx(-1);
+      }
+    };
+
+    animRef.current = setTimeout(tick, 0);
+    return () => {
+      if (animRef.current) clearTimeout(animRef.current);
+    };
+  }, [messages]);
 
   const handleSend = () => {
     const trimmed = input.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed) return;
     setInput('');
     onSendMessage(trimmed);
   };
@@ -131,7 +188,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
           </Box>
         </Box>
 
-        {/* Message list — flows with the page, no internal scroll */}
+        {/* Message list */}
         <Box
           sx={{
             px: 0,
@@ -141,10 +198,9 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
             gap: 2,
           }}
         >
-          {/* Initial loading state — only shown before first message arrives */}
+          {/* Initial loading state */}
           {isEmpty && loading && (
             <Box display="flex" alignItems="center" gap={1.25} py={0.5}>
-              <CircularProgress size={16} sx={{ color: '#667eea' }} />
               <Typography
                 sx={{
                   color: isDarkMode ? '#94a3b8' : '#64748b',
@@ -152,17 +208,37 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
                   fontSize: '0.93rem',
                 }}
               >
-                Analyzing your thoughts...
+                Reflecting on your thoughts{dots}
               </Typography>
             </Box>
           )}
 
           {messages.map((msg, idx) => {
             if (msg.role === 'assistant') {
+              const displayed = displayTexts[idx] ?? msg.content;
+              const isCurrentlyAnimating = animatingIdx === idx;
               return (
-                <Fade in timeout={400} key={idx}>
+                <Fade in timeout={300} key={idx}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    {renderMessageContent(msg.content, isDarkMode)}
+                    {renderMessageContent(displayed, isDarkMode)}
+                    {isCurrentlyAnimating && (
+                      <Box
+                        component="span"
+                        sx={{
+                          display: 'inline-block',
+                          width: '2px',
+                          height: '1.1em',
+                          backgroundColor: isDarkMode ? '#94a3b8' : '#64748b',
+                          ml: 0.25,
+                          verticalAlign: 'text-bottom',
+                          animation: 'cursorBlink 0.9s step-end infinite',
+                          '@keyframes cursorBlink': {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0 },
+                          },
+                        }}
+                      />
+                    )}
                   </Box>
                 </Fade>
               );
@@ -199,24 +275,20 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
             );
           })}
 
-          {/* Follow-up loading indicator — only shown after at least one message */}
+          {/* Follow-up loading indicator */}
           {loading && !isEmpty && (
             <Fade in timeout={300}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <CircularProgress size={13} sx={{ color: '#667eea' }} />
-                <Typography
-                  sx={{
-                    color: isDarkMode ? '#94a3b8' : '#64748b',
-                    fontStyle: 'italic',
-                    fontSize: '0.87rem',
-                  }}
-                >
-                  Thinking...
-                </Typography>
-              </Box>
+              <Typography
+                sx={{
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
+                  fontStyle: 'italic',
+                  fontSize: '0.87rem',
+                }}
+              >
+                {dots || '.'}
+              </Typography>
             </Fade>
           )}
-
         </Box>
 
         {/* Input area — sticky so it stays visible without manual scrolling */}
@@ -263,10 +335,10 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
             <span>
               <IconButton
                 onClick={handleSend}
-                disabled={!input.trim() || loading}
+                disabled={!input.trim()}
                 size="small"
                 sx={{
-                  color: !input.trim() || loading
+                  color: !input.trim()
                     ? (isDarkMode ? '#4a5568' : '#cbd5e1')
                     : '#667eea',
                   transition: 'color 0.15s ease',
