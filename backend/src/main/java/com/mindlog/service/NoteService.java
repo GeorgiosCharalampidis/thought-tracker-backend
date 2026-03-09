@@ -175,7 +175,31 @@ public class NoteService {
         }
         logger.info("Fetching notes with category: {}", category);
 
+        User currentUser = referenceNote.getUser();
+
+        // Own notes: user's past notes sorted by similarity, threshold 0.65, limit 3
+        List<Note> ownNotes = Collections.emptyList();
+        if (currentUser != null && referenceNote.getEmbedding() != null) {
+            float[] refEmb = referenceNote.getEmbedding();
+            ownNotes = NoteRepository.findByUser_Id(currentUser.getId())
+                    .stream()
+                    .filter(n -> referenceNote.getId() == null || !n.getId().equals(referenceNote.getId()))
+                    .filter(n -> n.getEmbedding() != null)
+                    .filter(n -> com.mindlog.util.VectorUtils.cosine(n.getEmbedding(), refEmb) > 0.65f)
+                    .sorted((n1, n2) -> Float.compare(
+                            com.mindlog.util.VectorUtils.cosine(n2.getEmbedding(), refEmb),
+                            com.mindlog.util.VectorUtils.cosine(n1.getEmbedding(), refEmb)))
+                    .limit(3)
+                    .collect(Collectors.toList());
+        }
+
+        // Community notes: same category, excluding current user's notes
         List<Note> sameCategoryNotes = NoteRepository.findByCategory(category);
+        if (currentUser != null) {
+            sameCategoryNotes = sameCategoryNotes.stream()
+                    .filter(n -> n.getUser() == null || !n.getUser().getId().equals(currentUser.getId()))
+                    .collect(Collectors.toList());
+        }
         List<Note> orderedNotes = orderNotesBySimilarityToReference(sameCategoryNotes, referenceNote);
 
         logger.info("Reference note subcategory: {}", referenceNote.getSubCategory());
@@ -184,7 +208,7 @@ public class NoteService {
                 .forEach((subCat, count) -> logger.info("Subcategory '{}': {} notes", subCat, count));
 
         String categoryMessage = getCategoryMessage(orderedNotes);
-        return new SimilarThoughtsResponse(categoryMessage, orderedNotes);
+        return new SimilarThoughtsResponse(categoryMessage, orderedNotes, ownNotes);
     }
 
     private static @NotNull String getCategoryMessage(List<Note> orderedNotes) {
@@ -241,7 +265,7 @@ public class NoteService {
     }
 
     private SimilarThoughtsResponse createInvalidInputResponse(String validationMessage) {
-        return new SimilarThoughtsResponse("", Collections.emptyList(), false, validationMessage);
+        return new SimilarThoughtsResponse("", Collections.emptyList(), Collections.emptyList(), false, validationMessage);
     }
 
     private void autoClusterUserNotes(List<Note> notes) {

@@ -34,6 +34,7 @@ export interface AiInsight {
 export interface SimilarThoughtsResponse {
   categoryMessage: string;
   notes: Note[];
+  ownNotes: Note[];
   inputAccepted: boolean;
   validationMessage?: string;
 }
