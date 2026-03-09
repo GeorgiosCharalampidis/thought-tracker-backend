@@ -725,10 +725,6 @@ function App() {
                     loading={chatLoading}
                     isDarkMode={isDarkMode}
                     onSendMessage={handleSendChatMessage}
-                    onClose={() => {
-                      setChatOpen(false);
-                      setChatMessages([]);
-                    }}
                   />
                 </Grid>
               )}

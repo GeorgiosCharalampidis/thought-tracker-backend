@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import {
   AutoAwesome as SparkleIcon,
-  Close as CloseIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
 import { ChatMessage } from '../types';
@@ -20,7 +19,6 @@ interface AiChatPanelProps {
   loading: boolean;
   isDarkMode: boolean;
   onSendMessage: (content: string) => void;
-  onClose: () => void;
 }
 
 const renderInlineFormatting = (text: string) => {
@@ -70,14 +68,17 @@ const renderMessageContent = (text: string, isDarkMode: boolean) => {
   });
 };
 
-function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: AiChatPanelProps) {
+function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPanelProps) {
   const [input, setInput] = useState('');
-  const bottomRef = useRef<HTMLDivElement>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll the page so the latest message is visible
+  // Scroll to the bottom of the page whenever messages update or loading changes
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 80);
+    return () => clearTimeout(timer);
   }, [messages, loading]);
 
   const handleSend = () => {
@@ -120,7 +121,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
           }}
         >
           <Box display="flex" alignItems="center" gap={1.25}>
-            <SparkleIcon sx={{ fontSize: 18, color: isDarkMode ? '#a0aec0' : '#718096' }} />
+            <SparkleIcon sx={{ fontSize: 18, color: isDarkMode ? '#94a3b8' : '#64748b' }} />
             <Typography
               variant="subtitle1"
               sx={{ fontWeight: 500, color: isDarkMode ? '#e2e8f0' : '#2d3748' }}
@@ -128,18 +129,6 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               Chat
             </Typography>
           </Box>
-          <Tooltip title="Close" placement="left">
-            <IconButton
-              onClick={onClose}
-              size="small"
-              sx={{
-                color: isDarkMode ? '#94a3b8' : '#718096',
-                '&:hover': { color: isDarkMode ? '#e2e8f0' : '#2d3748' },
-              }}
-            >
-              <CloseIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
         </Box>
 
         {/* Message list — flows with the page, no internal scroll */}
@@ -158,7 +147,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               <CircularProgress size={16} sx={{ color: '#667eea' }} />
               <Typography
                 sx={{
-                  color: isDarkMode ? '#a0aec0' : '#718096',
+                  color: isDarkMode ? '#94a3b8' : '#64748b',
                   fontStyle: 'italic',
                   fontSize: '0.93rem',
                 }}
@@ -217,7 +206,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
                 <CircularProgress size={13} sx={{ color: '#667eea' }} />
                 <Typography
                   sx={{
-                    color: isDarkMode ? '#a0aec0' : '#718096',
+                    color: isDarkMode ? '#94a3b8' : '#64748b',
                     fontStyle: 'italic',
                     fontSize: '0.87rem',
                   }}
@@ -228,13 +217,15 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
             </Fade>
           )}
 
-          <div ref={bottomRef} />
         </Box>
 
-        {/* Input area */}
+        {/* Input area — sticky so it stays visible without manual scrolling */}
         <Box
           sx={{
+            position: 'sticky',
+            bottom: 0,
             borderTop: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+            backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
             px: 0,
             py: 1.25,
             display: 'flex',
@@ -261,7 +252,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               lineHeight: 1.6,
               color: isDarkMode ? '#e2e8f0' : '#2d3748',
               '&::placeholder': {
-                color: isDarkMode ? '#4a5568' : '#a0aec0',
+                color: isDarkMode ? '#64748b' : '#94a3b8',
               },
               overflowY: 'auto',
               maxHeight: 96,
