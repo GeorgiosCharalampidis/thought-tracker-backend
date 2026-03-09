@@ -190,13 +190,13 @@ public class NoteService {
     private static @NotNull String getCategoryMessage(List<Note> orderedNotes) {
         String categoryMessage;
         if (orderedNotes.isEmpty()) {
-            categoryMessage = "You are the first one to share a thought like this..";
+            categoryMessage = "You're the first to share something like this.";
         } else if (orderedNotes.size() == 1) {
-            categoryMessage = "Someone else has shared a similar thought..";
-        } else if (orderedNotes.size() <= 3) {
-            categoryMessage = String.format("%d others have shared similar thoughts..", orderedNotes.size());
+            categoryMessage = "You're not alone — someone else has felt this way too.";
+        } else if (orderedNotes.size() <= 5) {
+            categoryMessage = String.format("You're not alone — %d others have felt something similar.", orderedNotes.size());
         } else {
-            categoryMessage = String.format("%d others have shared similar thoughts..", orderedNotes.size());
+            categoryMessage = String.format("%d people have shared thoughts like yours.", orderedNotes.size());
         }
         return categoryMessage;
     }

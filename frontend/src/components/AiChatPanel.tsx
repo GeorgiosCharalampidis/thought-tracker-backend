@@ -72,15 +72,12 @@ const renderMessageContent = (text: string, isDarkMode: boolean) => {
 
 function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: AiChatPanelProps) {
   const [input, setInput] = useState('');
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll within the container only — never touches the page scroll
+  // Scroll the page so the latest message is visible
   useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, loading]);
 
   const handleSend = () => {
@@ -104,12 +101,11 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
       <Paper
         elevation={0}
         sx={{
-          borderRadius: 2,
-          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
-          border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+          borderRadius: 0,
+          backgroundColor: 'transparent',
+          border: 'none',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
         }}
       >
         {/* Header */}
@@ -118,10 +114,9 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            px: 2.5,
+            px: 0,
             pt: 2,
             pb: 1.5,
-            borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
           }}
         >
           <Box display="flex" alignItems="center" gap={1.25}>
@@ -130,7 +125,7 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               variant="subtitle1"
               sx={{ fontWeight: 500, color: isDarkMode ? '#e2e8f0' : '#2d3748' }}
             >
-              AI Chat
+              Chat
             </Typography>
           </Box>
           <Tooltip title="Close" placement="left">
@@ -147,28 +142,14 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
           </Tooltip>
         </Box>
 
-        {/* Message list — scrolls internally, never touches the page */}
+        {/* Message list — flows with the page, no internal scroll */}
         <Box
-          ref={scrollContainerRef}
           sx={{
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            px: 2.5,
+            px: 0,
             py: 2,
-            maxHeight: 480,
             display: 'flex',
             flexDirection: 'column',
             gap: 2,
-            // Thin, subtle scrollbar that blends with the app style
-            '&::-webkit-scrollbar': { width: '4px' },
-            '&::-webkit-scrollbar-track': { background: 'transparent' },
-            '&::-webkit-scrollbar-thumb': {
-              background: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-              borderRadius: '4px',
-            },
-            '&::-webkit-scrollbar-thumb:hover': {
-              background: isDarkMode ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.22)',
-            },
           }}
         >
           {/* Initial loading state — only shown before first message arrives */}
@@ -246,13 +227,15 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage, onClose }: 
               </Box>
             </Fade>
           )}
+
+          <div ref={bottomRef} />
         </Box>
 
         {/* Input area */}
         <Box
           sx={{
-            borderTop: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
-            px: 2,
+            borderTop: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+            px: 0,
             py: 1.25,
             display: 'flex',
             alignItems: 'flex-end',

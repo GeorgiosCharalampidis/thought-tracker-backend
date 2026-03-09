@@ -18,7 +18,7 @@ function SimilarThoughtsSection({ notes, categoryMessage, isDarkMode, onShareAno
             variant="text"
             onClick={onShareAnotherThought}
             sx={{
-              mb: 2.5,
+              mb: 3,
               borderRadius: 999,
               px: 1.25,
               py: 0.5,
@@ -34,17 +34,41 @@ function SimilarThoughtsSection({ notes, categoryMessage, isDarkMode, onShareAno
             Share another thought
           </Button>
 
-          <Typography
-            variant="h5"
+          {/* Empathy heading block */}
+          <Box
             sx={{
-              fontWeight: 400,
-              color: isDarkMode ? '#f1f5f9' : '#2d3748',
-              mb: 3,
-              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              mb: 4,
+              gap: 1,
             }}
           >
-            {categoryMessage || "You're not alone.."}
-          </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 400,
+                color: isDarkMode ? '#f1f5f9' : '#2d3748',
+                textAlign: 'center',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {categoryMessage || "You're not alone."}
+            </Typography>
+            {notes.length > 0 && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: isDarkMode ? '#64748b' : '#94a3b8',
+                  textAlign: 'center',
+                  fontSize: '0.88rem',
+                  mt: 0.25,
+                }}
+              >
+                Here's what others have shared
+              </Typography>
+            )}
+          </Box>
 
           <Box display="flex" flexWrap="wrap" gap={3} justifyContent="center" alignItems="flex-start">
             {notes.map((noteItem, index) => (
@@ -118,4 +142,3 @@ function SimilarThoughtsSection({ notes, categoryMessage, isDarkMode, onShareAno
 }
 
 export default SimilarThoughtsSection;
-
