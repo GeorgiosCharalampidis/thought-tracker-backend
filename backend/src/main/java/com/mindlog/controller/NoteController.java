@@ -1,5 +1,6 @@
 package com.mindlog.controller;
 
+import com.mindlog.dto.ChatRequest;
 import com.mindlog.dto.SimilarThoughtsResponse;
 import com.mindlog.service.NoteService;
 import com.mindlog.service.UserService;
@@ -140,5 +141,15 @@ public class NoteController {
     public String getUserNotesSummary(@PathVariable Long userId, Authentication authentication) {
         userService.requireAuthorizedUser(userId, authentication);
         return userService.getAiReflection(userId);
+    }
+
+    @PostMapping("/{userId}/chat")
+    public ResponseEntity<String> chatWithJournal(
+            @PathVariable Long userId,
+            @RequestBody ChatRequest request,
+            Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
+        String response = userService.chatWithJournal(userId, request.getMessages());
+        return ResponseEntity.ok(response);
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mindlog.dto.ChatMessage;
 import java.util.*;
 
 @Service
@@ -108,6 +109,58 @@ public class AiService {
             }
         } catch (Exception e) {
             logger.error("Error communicating with AI service: {}", e.getMessage());
+            throw new RuntimeException("Error communicating with AI service", e);
+        }
+    }
+
+    public String chat(String notesContext, List<ChatMessage> conversationHistory) {
+        String systemPrompt = "You are a personal AI companion with access to this user's private journal. " +
+                "Here are their journal entries:\n\n" + notesContext + "\n\n" +
+                "Be direct, honest, and human. Don't use therapeutic language or talk down to them. " +
+                "If something sounds concerning, say so directly. If they're being hard on themselves, call it out. " +
+                "Ask real questions that show you're actually thinking about what they wrote. " +
+                "Keep it conversational. Don't be a therapist — be a real conversation partner. " +
+                "Use only standard ASCII characters - avoid smart quotes, em dashes, or other special Unicode characters.";
+
+        String url = config.getUrl() + "/api/chat";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Accept-Charset", "UTF-8");
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", systemPrompt));
+        for (ChatMessage msg : conversationHistory) {
+            messages.add(Map.of("role", msg.getRole(), "content", msg.getContent()));
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("model", config.getModel());
+        payload.put("messages", messages);
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
+
+        try {
+            logger.info("Sending chat request to AI service at: {}", url);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                StringBuilder fullResponse = new StringBuilder();
+                String responseBody = response.getBody();
+
+                for (String jsonChunk : responseBody.split("\n")) {
+                    if (jsonChunk.trim().isEmpty()) continue;
+                    JsonNode jsonNode = objectMapper.readTree(jsonChunk);
+                    if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
+                        fullResponse.append(jsonNode.get("message").get("content").asText());
+                    }
+                }
+                return fullResponse.toString();
+            } else {
+                throw new RuntimeException("Failed to get chat response: " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            logger.error("Error during chat with AI service: {}", e.getMessage());
             throw new RuntimeException("Error communicating with AI service", e);
         }
     }

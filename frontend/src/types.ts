@@ -1,5 +1,10 @@
 export type AuthMode = 'login' | 'register';
-export type PendingAction = 'save' | 'reflection' | null;
+export type PendingAction = 'save' | 'chat' | null;
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export interface Note {
   id: number;

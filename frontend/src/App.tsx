@@ -19,16 +19,16 @@ import {
   TextFields as TextFieldsIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
-import AiReflectionPanel from './components/AiReflectionPanel';
+import AiChatPanel from './components/AiChatPanel';
 import AuthDialog from './components/AuthDialog';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
 import SimilarThoughtsSection from './components/SimilarThoughtsSection';
 import ThoughtComposer from './components/ThoughtComposer';
 import {
-  AiInsight,
   AuthMode,
   AuthResponse,
   AuthUser,
+  ChatMessage,
   Note,
   PendingAction,
   SimilarThoughtsResponse,
@@ -80,7 +80,9 @@ function App() {
     }
     return false;
   });
-  const [aiInsight, setAiInsight] = useState<AiInsight>({ text: '', loading: false });
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -134,7 +136,9 @@ function App() {
     setCategoryMessage('');
     setValidationMessage('');
     setShowSimilarThoughts(false);
-    setAiInsight({ text: '', loading: false });
+    setChatMessages([]);
+    setChatLoading(false);
+    setChatOpen(false);
   };
 
   const applySimilarThoughtsResponse = (response: SimilarThoughtsResponse) => {
@@ -238,20 +242,34 @@ function App() {
     }
   };
 
-  const fetchAiReflectionForUser = async (user: AuthUser) => {
+  const sendChatMessageForUser = async (user: AuthUser, messages: ChatMessage[]) => {
+    setChatLoading(true);
     try {
-      setAiInsight({ text: '', loading: true });
-      const response = await axios.get<string>(`/api/notes/${user.id}/summary`);
-      setAiInsight({ text: response.data, loading: false });
+      const response = await axios.post<string>(`/api/notes/${user.id}/chat`, { messages });
+      const aiMessage: ChatMessage = { role: 'assistant', content: response.data };
+      setChatMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Error fetching AI reflection:', error);
+      console.error('Error in chat:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        setAiInsight({ text: '', loading: false });
-        openAuthPrompt('login', 'reflection', 'Log in to get an AI reflection on your journal.');
+        setChatOpen(false);
+        setChatMessages([]);
+        openAuthPrompt('login', 'chat', 'Log in to chat with your journal AI.');
       } else {
-        setAiInsight({ text: getErrorMessage(error, 'AI service is currently unavailable. Please try again later.'), loading: false });
+        const errMessage: ChatMessage = {
+          role: 'assistant',
+          content: getErrorMessage(error, 'AI service is currently unavailable. Please try again later.'),
+        };
+        setChatMessages((prev) => [...prev, errMessage]);
       }
+    } finally {
+      setChatLoading(false);
     }
+  };
+
+  const openChatForUser = async (user: AuthUser) => {
+    setChatOpen(true);
+    setChatMessages([]);
+    await sendChatMessageForUser(user, []);
   };
 
   const handleSubmit = async () => {
@@ -265,13 +283,20 @@ function App() {
     await submitNoteForUser(currentUser);
   };
 
-  const fetchAiReflection = async () => {
+  const openChat = async () => {
     if (!currentUser) {
-      openAuthPrompt('login', 'reflection', 'Log in to get an AI reflection on your saved thoughts.');
+      openAuthPrompt('login', 'chat', 'Log in to chat with your AI about your journal.');
       return;
     }
+    await openChatForUser(currentUser);
+  };
 
-    await fetchAiReflectionForUser(currentUser);
+  const handleSendChatMessage = async (content: string) => {
+    if (!currentUser) return;
+    const userMessage: ChatMessage = { role: 'user', content };
+    const updatedMessages = [...chatMessages, userMessage];
+    setChatMessages(updatedMessages);
+    await sendChatMessageForUser(currentUser, updatedMessages);
   };
 
   const handleAuthInputChange = (field: 'identifier' | 'username' | 'email' | 'password', value: string) => {
@@ -315,8 +340,8 @@ function App() {
 
       if (actionToResume === 'save') {
         await submitNoteForUser(authenticatedUser);
-      } else if (actionToResume === 'reflection') {
-        await fetchAiReflectionForUser(authenticatedUser);
+      } else if (actionToResume === 'chat') {
+        await openChatForUser(authenticatedUser);
       }
     } catch (error) {
       console.error(`Error during ${authMode}:`, error);
@@ -463,14 +488,14 @@ function App() {
           </Tooltip>
 
           <Tooltip
-            title="Reflect on your thoughts"
+            title="Chat with your journal AI"
             placement="right"
             disableHoverListener={sidebarVisible}
             disableFocusListener={sidebarVisible}
             disableTouchListener={sidebarVisible}
           >
             <Box
-              onClick={fetchAiReflection}
+              onClick={openChat}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -494,7 +519,7 @@ function App() {
               }}
             >
               <IconButton
-                onClick={fetchAiReflection}
+                onClick={openChat}
                 sx={{
                   width: 40,
                   height: 40,
@@ -519,7 +544,7 @@ function App() {
                     lineHeight: 1,
                   }}
                 >
-                  Reflect on your thoughts
+                  Chat with your journal AI
                 </Typography>
               )}
             </Box>
@@ -678,12 +703,17 @@ function App() {
                 </Grid>
               )}
 
-              {(aiInsight.loading || aiInsight.text) && (
+              {chatOpen && (
                 <Grid item xs={12}>
-                  <AiReflectionPanel
-                    text={aiInsight.text}
-                    loading={aiInsight.loading}
+                  <AiChatPanel
+                    messages={chatMessages}
+                    loading={chatLoading}
                     isDarkMode={isDarkMode}
+                    onSendMessage={handleSendChatMessage}
+                    onClose={() => {
+                      setChatOpen(false);
+                      setChatMessages([]);
+                    }}
                   />
                 </Grid>
               )}

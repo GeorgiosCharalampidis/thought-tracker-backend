@@ -1,6 +1,7 @@
 package com.mindlog.service;
 
 import com.mindlog.config.AiServiceConfig;
+import com.mindlog.dto.ChatMessage;
 import com.mindlog.dto.RegisterRequest;
 import com.mindlog.exception.BadCredentialsException;
 import com.mindlog.exception.UserNotFoundException;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -136,6 +138,26 @@ public class UserService {
 
         try {
             return aiService.getNotesFromModel(NotesBuilder.toString(), config.getModel());
+        } catch (Exception e) {
+            return "AI service is currently unavailable. Please try again later.";
+        }
+    }
+
+    public String chatWithJournal(Long userId, List<ChatMessage> messages) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + userId + " not found!"));
+
+        StringBuilder notesContext = new StringBuilder();
+        user.getNotes().forEach(note ->
+                notesContext.append("[").append(note.getDate()).append("] ").append(note.getContent()).append("\n")
+        );
+
+        List<ChatMessage> effectiveMessages = messages.isEmpty()
+                ? List.of(new ChatMessage("user", "Please reflect on my journal entries and share what you notice. Start a real conversation."))
+                : messages;
+
+        try {
+            return aiService.chat(notesContext.toString(), effectiveMessages);
         } catch (Exception e) {
             return "AI service is currently unavailable. Please try again later.";
         }
