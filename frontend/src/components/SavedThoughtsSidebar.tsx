@@ -10,9 +10,11 @@ interface SavedThoughtsSidebarProps {
   notesError: string;
   isDarkMode: boolean;
   isSidebarOpen: boolean;
+  isSidebarClosing: boolean;
   sidebarWidth: number;
   onClose: () => void;
   onSelectNote: (note: Note) => void;
+  onTransitionEnd: () => void;
   formatHistoryDate: (value: string) => string;
 }
 
@@ -23,11 +25,19 @@ function SavedThoughtsSidebar({
   notesError,
   isDarkMode,
   isSidebarOpen,
+  isSidebarClosing,
   sidebarWidth,
   onClose,
   onSelectNote,
+  onTransitionEnd,
   formatHistoryDate,
 }: SavedThoughtsSidebarProps) {
+  const sidebarBackground = isSidebarOpen
+    ? (isDarkMode ? '#2c2d2c' : '#edf1f6')
+    : (isDarkMode ? '#202120' : '#f1f5f9');
+
+  const scrollTrackColor = isDarkMode ? '#202120' : '#edf1f6';
+
   return (
     <Box
       sx={{
@@ -41,6 +51,11 @@ function SavedThoughtsSidebar({
         transition: 'transform 0.22s ease',
         overflow: 'hidden',
       }}
+      onTransitionEnd={(event) => {
+        if (event.target === event.currentTarget) {
+          onTransitionEnd();
+        }
+      }}
     >
       <Paper
         elevation={0}
@@ -48,42 +63,55 @@ function SavedThoughtsSidebar({
           position: 'relative',
           height: '100%',
           borderRadius: 0,
-          backgroundColor: isSidebarOpen
-            ? (isDarkMode ? '#2c2d2c' : '#edf1f6')
-            : (isDarkMode ? '#202120' : '#f1f5f9'),
+          backgroundColor: sidebarBackground,
           borderRight: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <Tooltip title="Close sidebar" placement="left">
-          <IconButton
-            onClick={onClose}
-            sx={{
-              position: 'absolute',
-              top: 18,
-              right: 12,
-              width: 36,
-              height: 36,
-              zIndex: 2,
-              color: isDarkMode ? '#cbd5e1' : '#475569',
-              backgroundColor: isDarkMode ? '#2c2d2c' : '#edf1f6',
-              border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-              '&:hover': {
-                backgroundColor: isDarkMode ? '#363736' : '#e3e8ef',
-              },
-            }}
-          >
-            <MenuOpenIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Tooltip>
+        <Box
+          sx={{
+            position: 'relative',
+            height: '136px',
+            flexShrink: 0,
+            backgroundColor: sidebarBackground,
+            borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(15,23,42,0.04)',
+          }}
+        >
+          <Tooltip title="Close sidebar" placement="left">
+            <IconButton
+              onClick={onClose}
+              sx={{
+                position: 'absolute',
+                top: 18,
+                right: 12,
+                width: 36,
+                height: 36,
+                zIndex: 2,
+                opacity: isSidebarClosing ? 0 : 1,
+                pointerEvents: isSidebarClosing ? 'none' : 'auto',
+                color: isDarkMode ? '#cbd5e1' : '#475569',
+                backgroundColor: isDarkMode ? '#2c2d2c' : '#edf1f6',
+                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                transition: 'opacity 0.08s ease',
+                '&:hover': {
+                  backgroundColor: isDarkMode ? '#363736' : '#e3e8ef',
+                },
+              }}
+            >
+              <MenuOpenIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
         <Box
           sx={{
-            pt: '136px',
+            flex: 1,
+            minHeight: 0,
             px: 1.1,
             pb: 1.1,
+            pt: 1.1,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -94,12 +122,12 @@ function SavedThoughtsSidebar({
               width: '10px',
             },
             '&::-webkit-scrollbar-track': {
-              backgroundColor: isDarkMode ? '#202120' : '#edf1f6',
+              backgroundColor: scrollTrackColor,
             },
             '&::-webkit-scrollbar-thumb': {
               backgroundColor: isDarkMode ? '#4b5563' : '#cbd5e1',
               borderRadius: '999px',
-              border: `2px solid ${isDarkMode ? '#202120' : '#edf1f6'}`,
+              border: `2px solid ${scrollTrackColor}`,
             },
           }}
         >

@@ -94,6 +94,7 @@ function App() {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarClosing, setIsSidebarClosing] = useState(false);
   const [isAltHeading, setIsAltHeading] = useState(false);
   const [authForm, setAuthForm] = useState({
     identifier: '',
@@ -120,6 +121,9 @@ function App() {
 
   const closeAuthPrompt = () => {
     setAuthPromptOpen(false);
+  };
+
+  const handleAuthDialogExited = () => {
     setPendingAction(null);
     setAuthPromptMessage('');
     setAuthError('');
@@ -333,7 +337,8 @@ function App() {
       setSavedNotes([]);
       setNotesError('');
       setAuthForm({ identifier: '', username: '', email: '', password: '' });
-      closeAuthPrompt();
+      setAuthPromptOpen(false);
+      handleAuthDialogExited();
       resetJournalState();
       setNote('');
     }
@@ -344,13 +349,34 @@ function App() {
     setNote('');
   };
 
-  const handlePrimaryLeftAction = () => {
+  const openSidebar = () => {
+    setIsSidebarClosing(false);
+    setIsSidebarOpen(true);
+  };
+
+  const closeSidebar = () => {
     if (!isSidebarOpen) {
-      setIsSidebarOpen(true);
+      return;
+    }
+    setIsSidebarClosing(true);
+    setIsSidebarOpen(false);
+  };
+
+  const handleSidebarTransitionEnd = () => {
+    if (!isSidebarOpen && isSidebarClosing) {
+      setIsSidebarClosing(false);
+    }
+  };
+
+  const handlePrimaryLeftAction = () => {
+    if (!isSidebarOpen && !isSidebarClosing) {
+      openSidebar();
       return;
     }
 
-    setIsAltHeading((previous) => !previous);
+    if (isSidebarOpen) {
+      setIsAltHeading((previous) => !previous);
+    }
   };
 
   const handleSavedNoteSelect = (savedNote: Note) => {
@@ -361,6 +387,7 @@ function App() {
 
   const theme = createAppTheme(isDarkMode);
   const sidebarWidth = 284;
+  const sidebarVisible = isSidebarOpen || isSidebarClosing;
   const mainContentOffset = isSidebarOpen ? 316 : 96;
   const headingText = isAltHeading ? 'Pause and notice' : 'Share a thought';
   const thoughtPlaceholder = currentUser
@@ -420,10 +447,12 @@ function App() {
               sx={{
                 width: 40,
                 height: 40,
-                pointerEvents: 'auto',
+                pointerEvents: isSidebarClosing ? 'none' : 'auto',
+                opacity: isSidebarClosing ? 0 : 1,
                 color: isDarkMode ? '#cbd5e1' : '#475569',
                 backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
                 border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                transition: 'opacity 0.14s ease, background-color 0.2s ease',
                 '&:hover': {
                   backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
                 },
@@ -436,9 +465,9 @@ function App() {
           <Tooltip
             title="Reflect on your thoughts"
             placement="right"
-            disableHoverListener={isSidebarOpen}
-            disableFocusListener={isSidebarOpen}
-            disableTouchListener={isSidebarOpen}
+            disableHoverListener={sidebarVisible}
+            disableFocusListener={sidebarVisible}
+            disableTouchListener={sidebarVisible}
           >
             <Box
               onClick={fetchAiReflection}
@@ -454,7 +483,8 @@ function App() {
                 py: 0,
                 borderRadius: 999,
                 cursor: 'pointer',
-                transition: 'background-color 0.2s ease, color 0.2s ease',
+                opacity: isSidebarClosing ? 0.72 : 1,
+                transition: 'background-color 0.2s ease, color 0.2s ease, opacity 0.14s ease',
                 backgroundColor: 'transparent',
                 '&:hover': {
                   backgroundColor: isSidebarOpen
@@ -503,9 +533,11 @@ function App() {
           notesError={notesError}
           isDarkMode={isDarkMode}
           isSidebarOpen={isSidebarOpen}
+          isSidebarClosing={isSidebarClosing}
           sidebarWidth={sidebarWidth}
-          onClose={() => setIsSidebarOpen(false)}
+          onClose={closeSidebar}
           onSelectNote={handleSavedNoteSelect}
+          onTransitionEnd={handleSidebarTransitionEnd}
           formatHistoryDate={formatHistoryDate}
         />
 
@@ -611,6 +643,7 @@ function App() {
           authForm={authForm}
           isDarkMode={isDarkMode}
           onClose={closeAuthPrompt}
+          onExited={handleAuthDialogExited}
           onSubmit={handleAuthSubmit}
           onChange={handleAuthInputChange}
         />

@@ -16,6 +16,7 @@ interface AuthDialogProps {
   };
   isDarkMode: boolean;
   onClose: () => void;
+  onExited: () => void;
   onSubmit: () => void;
   onChange: (field: 'identifier' | 'username' | 'email' | 'password', value: string) => void;
 }
@@ -29,6 +30,7 @@ function AuthDialog({
   authForm,
   isDarkMode,
   onClose,
+  onExited,
   onSubmit,
   onChange,
 }: AuthDialogProps) {
@@ -63,6 +65,9 @@ function AuthDialog({
     <Dialog
       open={open}
       onClose={onClose}
+      TransitionProps={{
+        onExited,
+      }}
       fullWidth
       maxWidth="xs"
       PaperProps={{
@@ -75,6 +80,7 @@ function AuthDialog({
           boxShadow: isDarkMode
             ? '0 24px 80px rgba(0,0,0,0.38)'
             : '0 24px 80px rgba(15,23,42,0.10)',
+          minHeight: authMode === 'register' ? 398 : 326,
         },
       }}
     >
