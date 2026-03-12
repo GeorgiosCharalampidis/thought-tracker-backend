@@ -71,7 +71,6 @@ function App() {
   // Main screen state for the thought composer and response panels.
   const [note, setNote] = useState('');
   const [similarThoughts, setSimilarThoughts] = useState<Note[]>([]);
-  const [ownSimilarThoughts, setOwnSimilarThoughts] = useState<Note[]>([]);
   const [categoryMessage, setCategoryMessage] = useState<string>('');
   const [validationMessage, setValidationMessage] = useState<string>('');
   const [showSimilarThoughts, setShowSimilarThoughts] = useState(false);
@@ -135,7 +134,6 @@ function App() {
 
   const resetJournalState = () => {
     setSimilarThoughts([]);
-    setOwnSimilarThoughts([]);
     setCategoryMessage('');
     setValidationMessage('');
     setShowSimilarThoughts(false);
@@ -147,7 +145,6 @@ function App() {
   const applySimilarThoughtsResponse = (response: SimilarThoughtsResponse) => {
     if (response.inputAccepted) {
       setSimilarThoughts(response.notes);
-      setOwnSimilarThoughts(response.ownNotes || []);
       setCategoryMessage(response.categoryMessage);
       setValidationMessage('');
       setNote('');
@@ -719,7 +716,6 @@ function App() {
                 <Grid item xs={12}>
                   <SimilarThoughtsSection
                     notes={similarThoughts}
-                    ownNotes={ownSimilarThoughts}
                     categoryMessage={categoryMessage}
                     isDarkMode={isDarkMode}
                     onShareAnotherThought={handleShareAnotherThought}
