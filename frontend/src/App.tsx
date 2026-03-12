@@ -36,6 +36,7 @@ import {
 } from './types';
 
 axios.defaults.withCredentials = true;
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || '';
 
 const createAppTheme = (isDarkMode: boolean) => createTheme({
   palette: {

@@ -11,6 +11,10 @@
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "axios": "^1.4.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
     "@mui/material": "^5.14.0",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
@@ -24,6 +28,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:mobile": "set REACT_APP_API_URL=http://192.168.68.108:8080 && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
