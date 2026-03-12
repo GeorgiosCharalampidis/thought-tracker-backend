@@ -27,6 +27,15 @@ import java.util.stream.Collectors;
 public class NoteService {
 
     private static final Logger logger = LoggerFactory.getLogger(NoteService.class);
+    private static final float CATEGORY_CONFIDENCE_THRESHOLD = 0.30f;
+    private static final float CATEGORY_CONFIDENCE_MARGIN = 0.015f;
+    private static final float SUBCATEGORY_CONFIDENCE_THRESHOLD = 0.32f;
+    private static final float SUBCATEGORY_CONFIDENCE_MARGIN = 0.015f;
+    private static final float OWN_NOTE_SIMILARITY_THRESHOLD = 0.72f;
+    private static final float COMMUNITY_NOTE_SIMILARITY_THRESHOLD = 0.68f;
+    private static final float COMMUNITY_SUBCATEGORY_RELAXED_THRESHOLD = 0.62f;
+    private static final int MAX_OWN_NOTES = 3;
+    private static final int MAX_COMMUNITY_NOTES = 6;
 
     private final NoteRepository NoteRepository;
     private final UserService userService;
@@ -163,44 +172,54 @@ public class NoteService {
     }
 
     public SimilarThoughtsResponse getNotesOfSameCategory(Long userId, Long noteId) {
-        Note note = NoteRepository.findById(noteId)
-                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
+        Note note = NoteRepository.findByIdAndUser_Id(noteId, userId)
+                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
         return buildSimilarThoughtsResponse(note);
     }
 
     private SimilarThoughtsResponse buildSimilarThoughtsResponse(Note referenceNote) {
         String category = referenceNote.getCategory();
         if (category == null || category.isEmpty()) {
-            throw new BadCredentialsException("Note has no category");
+            category = Category.OPEN_REFLECTIONS.getDisplayName();
+            referenceNote.setCategory(category);
         }
         logger.info("Fetching notes with category: {}", category);
 
         User currentUser = referenceNote.getUser();
+        Long currentUserId = currentUser != null ? currentUser.getId() : null;
+        Long referenceNoteId = referenceNote.getId();
+        float[] referenceEmbedding = referenceNote.getEmbedding();
 
-        // Own notes: user's past notes sorted by similarity, threshold 0.65, limit 3
+        // Own notes: user's past notes sorted by similarity, thresholded to avoid weak matches.
         List<Note> ownNotes = Collections.emptyList();
-        if (currentUser != null && referenceNote.getEmbedding() != null) {
-            float[] refEmb = referenceNote.getEmbedding();
-            ownNotes = NoteRepository.findByUser_Id(currentUser.getId())
+        if (currentUserId != null && referenceEmbedding != null) {
+            ownNotes = NoteRepository.findByUser_Id(currentUserId)
                     .stream()
-                    .filter(n -> referenceNote.getId() == null || !n.getId().equals(referenceNote.getId()))
+                    .filter(n -> referenceNoteId == null || !referenceNoteId.equals(n.getId()))
                     .filter(n -> n.getEmbedding() != null)
-                    .filter(n -> com.mindlog.util.VectorUtils.cosine(n.getEmbedding(), refEmb) > 0.65f)
+                    .filter(n -> com.mindlog.util.VectorUtils.cosine(n.getEmbedding(), referenceEmbedding) >= OWN_NOTE_SIMILARITY_THRESHOLD)
                     .sorted((n1, n2) -> Float.compare(
-                            com.mindlog.util.VectorUtils.cosine(n2.getEmbedding(), refEmb),
-                            com.mindlog.util.VectorUtils.cosine(n1.getEmbedding(), refEmb)))
-                    .limit(3)
+                            com.mindlog.util.VectorUtils.cosine(n2.getEmbedding(), referenceEmbedding),
+                            com.mindlog.util.VectorUtils.cosine(n1.getEmbedding(), referenceEmbedding)))
+                    .limit(MAX_OWN_NOTES)
                     .collect(Collectors.toList());
         }
 
-        // Community notes: same category, excluding current user's notes
-        List<Note> sameCategoryNotes = NoteRepository.findByCategory(category);
-        if (currentUser != null) {
-            sameCategoryNotes = sameCategoryNotes.stream()
-                    .filter(n -> n.getUser() == null || !n.getUser().getId().equals(currentUser.getId()))
-                    .collect(Collectors.toList());
+        List<Note> candidateNotes;
+        if (Category.OPEN_REFLECTIONS.getDisplayName().equals(category)) {
+            candidateNotes = NoteRepository.findAll();
+        } else if (currentUserId != null) {
+            candidateNotes = NoteRepository.findByCategoryAndUser_IdNot(category, currentUserId);
+        } else {
+            candidateNotes = NoteRepository.findByCategory(category);
         }
-        List<Note> orderedNotes = orderNotesBySimilarityToReference(sameCategoryNotes, referenceNote);
+
+        List<Note> orderedNotes = orderNotesBySubcategoryAndSimilarity(candidateNotes, referenceNote).stream()
+                .filter(n -> referenceNoteId == null || !referenceNoteId.equals(n.getId()))
+                .filter(n -> currentUserId == null || n.getUser() == null || !currentUserId.equals(n.getUser().getId()))
+                .filter(n -> isStrongCommunityMatch(n, referenceNote))
+                .limit(MAX_COMMUNITY_NOTES)
+                .collect(Collectors.toList());
 
         logger.info("Reference note subcategory: {}", referenceNote.getSubCategory());
         orderedNotes.stream()
@@ -225,19 +244,8 @@ public class NoteService {
         return categoryMessage;
     }
 
-    private String findBestMatchingTheme(String text, List<String> themes, List<float[]> themeEmbeddings) {
-        List<float[]> noteEmbedding = embeddingService.embedAll(Collections.singletonList(text));
-        float best = Float.NEGATIVE_INFINITY;
-        int bestIdx = 0;
-        float[] vec = noteEmbedding.get(0);
-        for (int t = 0; t < themeEmbeddings.size(); t++) {
-            float sim = com.mindlog.util.VectorUtils.cosine(vec, themeEmbeddings.get(t));
-            if (sim > best) {
-                best = sim;
-                bestIdx = t;
-            }
-        }
-        return themes.get(bestIdx);
+    private ScoredMatch findBestMatchingTheme(float[] noteEmbedding, List<String> themes, List<float[]> themeEmbeddings) {
+        return findBestMatch(noteEmbedding, themes, themeEmbeddings);
     }
 
     private String validateThoughtContent(Note note) {
@@ -282,15 +290,22 @@ public class NoteService {
 
             note.setEmbedding(noteEmbedding);
 
-            String bestTheme = findBestMatchingTheme(note.getContent(), themes, themeEmbeddings);
+            ScoredMatch bestThemeMatch = findBestMatchingTheme(noteEmbedding, themes, themeEmbeddings);
+            String bestTheme = bestThemeMatch.isConfident(CATEGORY_CONFIDENCE_THRESHOLD, CATEGORY_CONFIDENCE_MARGIN)
+                    ? bestThemeMatch.label()
+                    : Category.OPEN_REFLECTIONS.getDisplayName();
             note.setCategory(bestTheme);
 
-            String bestSubCategory = findBestSubCategory(note.getContent(), bestTheme, noteEmbedding);
+            String bestSubCategory = findBestSubCategory(bestTheme, noteEmbedding);
             note.setSubCategory(bestSubCategory);
         }
     }
 
-    private String findBestSubCategory(String text, String parentCategory, float[] noteEmbedding) {
+    private String findBestSubCategory(String parentCategory, float[] noteEmbedding) {
+        if (Category.OPEN_REFLECTIONS.getDisplayName().equals(parentCategory)) {
+            return "General";
+        }
+
         List<SubCategory> subCategories = SubCategory.getSubCategoriesForParent(parentCategory);
 
         if (subCategories.isEmpty()) {
@@ -303,18 +318,16 @@ public class NoteService {
 
         List<float[]> subEmbeddings = embeddingService.embedAll(subDescriptions);
 
-        float best = Float.NEGATIVE_INFINITY;
-        int bestIdx = 0;
+        List<String> subLabels = subCategories.stream()
+                .map(SubCategory::getLabel)
+                .collect(Collectors.toList());
 
-        for (int i = 0; i < subEmbeddings.size(); i++) {
-            float sim = com.mindlog.util.VectorUtils.cosine(noteEmbedding, subEmbeddings.get(i));
-            if (sim > best) {
-                best = sim;
-                bestIdx = i;
-            }
+        ScoredMatch bestSubCategory = findBestMatch(noteEmbedding, subLabels, subEmbeddings);
+        if (!bestSubCategory.isConfident(SUBCATEGORY_CONFIDENCE_THRESHOLD, SUBCATEGORY_CONFIDENCE_MARGIN)) {
+            return "General";
         }
 
-        return subCategories.get(bestIdx).getLabel();
+        return bestSubCategory.label();
     }
 
     public void deleteNoteByIdAndUserId(Long userId, Long noteId) {
@@ -420,6 +433,47 @@ public class NoteService {
                     return Float.compare(sim2, sim1); // Higher similarity first
                 })
                 .collect(Collectors.toList());
+    }
+
+    private boolean isStrongCommunityMatch(Note candidate, Note referenceNote) {
+        if (candidate.getEmbedding() == null || referenceNote.getEmbedding() == null) {
+            return false;
+        }
+
+        float similarity = com.mindlog.util.VectorUtils.cosine(candidate.getEmbedding(), referenceNote.getEmbedding());
+        if (similarity >= COMMUNITY_NOTE_SIMILARITY_THRESHOLD) {
+            return true;
+        }
+
+        return similarity >= COMMUNITY_SUBCATEGORY_RELAXED_THRESHOLD
+                && Objects.equals(candidate.getSubCategory(), referenceNote.getSubCategory())
+                && referenceNote.getSubCategory() != null
+                && !referenceNote.getSubCategory().isBlank();
+    }
+
+    private ScoredMatch findBestMatch(float[] sourceEmbedding, List<String> labels, List<float[]> candidateEmbeddings) {
+        float best = Float.NEGATIVE_INFINITY;
+        float secondBest = Float.NEGATIVE_INFINITY;
+        int bestIdx = 0;
+
+        for (int i = 0; i < candidateEmbeddings.size(); i++) {
+            float sim = com.mindlog.util.VectorUtils.cosine(sourceEmbedding, candidateEmbeddings.get(i));
+            if (sim > best) {
+                secondBest = best;
+                best = sim;
+                bestIdx = i;
+            } else if (sim > secondBest) {
+                secondBest = sim;
+            }
+        }
+
+        return new ScoredMatch(labels.get(bestIdx), best, secondBest);
+    }
+
+    private record ScoredMatch(String label, float bestScore, float secondBestScore) {
+        private boolean isConfident(float threshold, float margin) {
+            return bestScore >= threshold && (bestScore - secondBestScore) >= margin;
+        }
     }
 
     private float[] calculateCentroid(List<Note> notes) {

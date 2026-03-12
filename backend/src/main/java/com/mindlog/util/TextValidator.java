@@ -6,7 +6,7 @@ public class TextValidator {
     
     // Much more permissive settings since AI does the real validation
     private static final int MIN_MEANINGFUL_LENGTH = 3; // Very short minimum
-    private static final int MIN_WORD_COUNT = 3; // At least 3 words to form a thought
+    private static final int MIN_WORD_COUNT = 2; // At least 3 words to form a thought
     
     // Pattern for mostly numbers or special characters
     private static final Pattern MOSTLY_NON_ALPHA = Pattern.compile("^[^a-zA-Z]*$|^[a-zA-Z]{1,2}[^a-zA-Z]*$");

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NoteRepository extends JpaRepository<Note, Long> {
@@ -26,6 +27,10 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     // Find notes by category (case-insensitive match)
     List<Note> findByCategory(String category);
+
+    Optional<Note> findByIdAndUser_Id(Long id, Long userId);
+
+    List<Note> findByCategoryAndUser_IdNot(String category, Long userId);
 
     // List distinct categories for a user
     @Query("select distinct n.category from Note n where n.user.id = :userId and n.category is not null")

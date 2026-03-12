@@ -71,6 +71,7 @@ function App() {
   // Main screen state for the thought composer and response panels.
   const [note, setNote] = useState('');
   const [similarThoughts, setSimilarThoughts] = useState<Note[]>([]);
+  const [ownSimilarThoughts, setOwnSimilarThoughts] = useState<Note[]>([]);
   const [categoryMessage, setCategoryMessage] = useState<string>('');
   const [validationMessage, setValidationMessage] = useState<string>('');
   const [showSimilarThoughts, setShowSimilarThoughts] = useState(false);
@@ -134,6 +135,7 @@ function App() {
 
   const resetJournalState = () => {
     setSimilarThoughts([]);
+    setOwnSimilarThoughts([]);
     setCategoryMessage('');
     setValidationMessage('');
     setShowSimilarThoughts(false);
@@ -142,16 +144,23 @@ function App() {
     setChatOpen(false);
   };
 
-  const applySimilarThoughtsResponse = (response: SimilarThoughtsResponse) => {
+  const applySimilarThoughtsResponse = (
+    response: SimilarThoughtsResponse,
+    options?: { clearComposer?: boolean },
+  ) => {
     if (response.inputAccepted) {
       setSimilarThoughts(response.notes);
+      setOwnSimilarThoughts(response.ownNotes ?? []);
       setCategoryMessage(response.categoryMessage);
       setValidationMessage('');
-      setNote('');
+      if (options?.clearComposer !== false) {
+        setNote('');
+      }
       setShowSimilarThoughts(true);
       return;
     }
 
+    setOwnSimilarThoughts([]);
     setValidationMessage(response.validationMessage || 'Please try writing something more meaningful.');
   };
 
@@ -413,10 +422,34 @@ function App() {
     }
   };
 
-  const handleSavedNoteSelect = (savedNote: Note) => {
+  const handleSavedNoteSelect = async (savedNote: Note) => {
     setNote(savedNote.content);
     setValidationMessage('');
-    setShowSimilarThoughts(false);
+
+    if (!currentUser) {
+      setShowSimilarThoughts(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.get<SimilarThoughtsResponse>(
+        `/api/notes/${currentUser.id}/subject/${encodeURIComponent(savedNote.category)}/similar-to/${savedNote.id}`,
+      );
+      applySimilarThoughtsResponse(response.data, { clearComposer: false });
+    } catch (error) {
+      console.error('Error loading similar thoughts for saved note:', error);
+      setOwnSimilarThoughts([]);
+      setCategoryMessage('');
+      setShowSimilarThoughts(false);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        openAuthPrompt('login', null, 'Log in again to explore related saved thoughts.');
+      } else {
+        setValidationMessage(getErrorMessage(error, 'Could not load related thoughts for this entry.'));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const theme = createAppTheme(isDarkMode);
@@ -716,6 +749,7 @@ function App() {
                 <Grid item xs={12}>
                   <SimilarThoughtsSection
                     notes={similarThoughts}
+                    ownNotes={ownSimilarThoughts}
                     categoryMessage={categoryMessage}
                     isDarkMode={isDarkMode}
                     onShareAnotherThought={handleShareAnotherThought}
