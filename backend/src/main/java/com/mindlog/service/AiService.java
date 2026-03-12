@@ -180,15 +180,19 @@ public class AiService {
         String systemPrompt = "You are a text validator for a personal reflection app. " +
                 "Respond with ONLY 'VALID' or 'INVALID' — nothing else. " +
 
-                "VALID: Any coherent statement, phrase, or sentence that conveys a personal experience, activity, event, thought, reflection, decision, concern, uncertainty, dilemma, judgment, self-description, feeling, goal, aspiration, desire, or wish. " +
-                "Even short or simple expressions (e.g., 'tired', 'feeling bad', 'want to be rich', 'need a vacation') are VALID if they clearly express a state, thought, or desire. " +
+                "VALID: Any coherent word, phrase, or sentence that conveys a personal experience, activity, event, thought, reflection, decision, concern, uncertainty, dilemma, judgment, self-description, feeling, goal, aspiration, desire, or wish. " +
+                "Even short or simple expressions (e.g., 'tired', 'feeling bad', 'want to be rich', 'need a vacation') are VALID if they clearly express a personal state, thought, or desire. " +
+                "The text must have clear semantic meaning and be understandable by a human reader. " +
 
-                "INVALID: Pure greetings with no personal content, casual/social questions, test messages, gibberish, single words with no meaning (e.g., 'asdfgh'), incomplete fragments that cut off mid-thought, and dismissive responses like 'whatever'. " +
+                "INVALID: Pure greetings with no personal content, casual/social questions, test messages, gibberish, random characters, keyboard smashing, repeated characters, or meaningless text. " +
+                "Also INVALID if the text has no clear semantic meaning, cannot be understood, or cannot reasonably be classified as a personal reflection. " +
+                "Single words with no meaning (e.g., 'asdfgh'), incomplete fragments that cut off mid-thought, and dismissive responses like 'whatever' are INVALID. " +
 
                 "Examples — VALID: 'I am such a bad person', 'tired', 'feeling stressed', 'argued with my boss', 'I don’t know how to ask my boss for more flexibility', 'thinking about quitting my job'. " +
                 "Examples — INVALID: 'hello', 'hey what's up', 'how are you', 'test', 'whatever', 'asdfgh', 'today I did'. " +
 
-                "Rule of thumb: Be very permissive - approve any genuine personal expression including goals, desires, and aspirations. Only reject obvious non-personal content.";
+                "Rule of thumb: Be permissive with genuine personal expressions including goals, desires, and aspirations. " +
+                "Reject only if the input is clearly meaningless, non-personal, or cannot be understood.";
 
 
         String url = config.getUrl() + "/api/chat";

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -46,11 +46,12 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
     }
   }, [noteId, loaded]);
 
-  const handleToggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next && !loaded) loadComments();
-  };
+  // Load eagerly so comments are ready before the user expands (prevents layout shift)
+  useEffect(() => {
+    loadComments();
+  }, [loadComments]);
+
+  const handleToggle = () => setOpen(prev => !prev);
 
   const handleSubmit = async () => {
     const text = draftText.trim();
@@ -100,7 +101,7 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
         </Typography>
       </Box>
 
-      <Collapse in={open}>
+      <Collapse in={open} sx={{ overflow: 'hidden', '&.MuiCollapse-entered': { overflow: 'hidden' } }}>
         <Box mt={1.5}>
           {loading && (
             <Box display="flex" justifyContent="center" py={1}>
