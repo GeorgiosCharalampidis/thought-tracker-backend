@@ -1,112 +1,114 @@
 package com.mindlog.service;
 
-import com.mindlog.exception.UserNotFoundException;
-
+import com.mindlog.dto.CommentResponse;
+import com.mindlog.exception.BadCredentialsException;
 import com.mindlog.model.Comment;
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
 import com.mindlog.repository.CommentRepository;
 import com.mindlog.repository.NoteRepository;
-import com.mindlog.repository.UserRepository;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CommentService.class);
 
     private final CommentRepository commentRepository;
-    private final UserRepository userRepository;
     private final NoteRepository noteRepository;
+    private final UserService userService;
 
-    public CommentService(CommentRepository commentRepository, UserRepository userRepository, NoteRepository noteRepository) {
+    public CommentService(CommentRepository commentRepository, NoteRepository noteRepository, UserService userService) {
         this.commentRepository = commentRepository;
-        this.userRepository = userRepository;
         this.noteRepository = noteRepository;
+        this.userService = userService;
     }
 
-    public Comment createComment(Comment comment) {
-        if (comment == null || comment.getText() == null) {
-            throw new IllegalArgumentException("Comment cannot be null or empty");
-        }
-        if (comment.getNote() == null || comment.getNote().getId() == null) {
-            throw new IllegalArgumentException("Comment must be associated with a valid note");
-        }
-        if (comment.getUser() == null || comment.getUser().getId() == null) {
-            throw new IllegalArgumentException("Comment must be associated with a valid user");
-        }
-        
-        // Verify that the note exists
-        Note note = noteRepository.findById(comment.getNote().getId())
-            .orElseThrow(() -> new IllegalArgumentException("Note with ID " + comment.getNote().getId() + " not found"));
-        
-        // Verify that the user exists
-        User user = userRepository.findById(comment.getUser().getId())
-            .orElseThrow(() -> new UserNotFoundException("User with ID " + comment.getUser().getId() + " not found"));
+    public List<CommentResponse> getCommentsForNote(Long noteId, Authentication authentication) {
+        noteRepository.findById(noteId)
+                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
 
-        comment.setNote(note);
-        comment.setUser(user);
-        
-        return this.commentRepository.save(comment);
+        Long currentUserId = resolveCurrentUserId(authentication);
+
+        return commentRepository.findByNote_IdOrderByCreatedAtAsc(noteId)
+                .stream()
+                .map(c -> CommentResponse.from(c, currentUserId))
+                .collect(Collectors.toList());
     }
 
-    public List<Comment> getCommentsByNoteId(Long noteId) {
-        if (noteId == null) {
-            throw new IllegalArgumentException("Note ID cannot be null");
+    public CommentResponse addComment(Long noteId, String text, Authentication authentication) {
+        if (text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Comment text cannot be empty");
         }
-        return commentRepository.findByNote_Id(noteId);
+        if (text.length() > 500) {
+            throw new IllegalArgumentException("Comment text cannot exceed 500 characters");
+        }
+
+        User commenter = userService.getAuthenticatedUser(authentication);
+
+        Note note = noteRepository.findById(noteId)
+                .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found"));
+
+        Comment comment = new Comment(text.strip(), note, commenter);
+        Comment saved = commentRepository.save(comment);
+
+        // Keep comment_count in sync
+        int newCount = (note.getCommentCount() == null ? 0 : note.getCommentCount()) + 1;
+        note.setCommentCount(newCount);
+        noteRepository.save(note);
+
+        logger.info("User {} added comment {} on note {}", commenter.getId(), saved.getId(), noteId);
+        return CommentResponse.from(saved, commenter.getId());
     }
 
-    public List<Comment> getCommentsByUserId(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID cannot be null");
-        }
-        return commentRepository.findByUser_Id(userId);
-    }
+    public void deleteComment(Long commentId, Authentication authentication) {
+        User requester = userService.getAuthenticatedUser(authentication);
 
-    public Comment getCommentById(Long commentId) {
-        if (commentId == null) {
-            throw new IllegalArgumentException("Comment ID cannot be null");
-        }
-        return commentRepository.findById(commentId)
-            .orElseThrow(() -> new IllegalArgumentException("Comment with ID " + commentId + " not found"));
-    }
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BadCredentialsException("Comment with ID " + commentId + " not found"));
 
-    public void deleteComment(Long commentId) {
-        if (commentId == null) {
-            throw new IllegalArgumentException("Comment ID cannot be null");
+        if (!comment.getUser().getId().equals(requester.getId())) {
+            throw new AccessDeniedException("You can only delete your own comments");
         }
-        
-        if (!commentRepository.existsById(commentId)) {
-            throw new IllegalArgumentException("Comment with ID " + commentId + " not found");
+
+        Note note = comment.getNote();
+        commentRepository.delete(comment);
+
+        // Keep comment_count in sync
+        if (note != null && note.getCommentCount() != null && note.getCommentCount() > 0) {
+            note.setCommentCount(note.getCommentCount() - 1);
+            noteRepository.save(note);
         }
-        
-        commentRepository.deleteById(commentId);
+
+        logger.info("User {} deleted comment {}", requester.getId(), commentId);
     }
 
     public void deleteCommentsByUserId(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID cannot be null");
-        }
-
-        List<Comment> comments = commentRepository.findByUser_Id(userId);
-        commentRepository.deleteAll(comments);
+        commentRepository.deleteAll(commentRepository.findByUser_Id(userId));
     }
 
     public void deleteCommentsByNoteId(Long noteId) {
-        if (noteId == null) {
-            throw new IllegalArgumentException("Note ID cannot be null");
-        }
-
-        List<Comment> comments = commentRepository.findByNote_Id(noteId);
-        commentRepository.deleteAll(comments);
+        commentRepository.deleteAll(commentRepository.findByNote_Id(noteId));
     }
 
-
+    private Long resolveCurrentUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            return null;
+        }
+        try {
+            return userService.getAuthenticatedUser(authentication).getId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

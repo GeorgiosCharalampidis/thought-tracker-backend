@@ -93,6 +93,16 @@ public class NoteController {
         return ResponseEntity.ok(notes);
     }
 
+    @GetMapping("/{userId}/similar-to/{noteId}")
+    public ResponseEntity<SimilarThoughtsResponse> getSimilarThoughtsForNote(
+            @PathVariable Long userId,
+            @PathVariable Long noteId,
+            Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
+        SimilarThoughtsResponse response = NoteService.getNotesOfSameCategory(userId, noteId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{userId}/subject/{subject}/similar-to/{noteId}")
     public ResponseEntity<SimilarThoughtsResponse> getNotesBySubjectSimilarTo(
             @PathVariable Long userId,
