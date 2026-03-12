@@ -592,6 +592,26 @@ function App() {
               )}
             </Box>
           </Tooltip>
+
+          <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'} placement="right">
+            <IconButton
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              sx={{
+                width: 40,
+                height: 40,
+                pointerEvents: 'auto',
+                color: isDarkMode ? '#cbd5e1' : '#475569',
+                backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                transition: 'background-color 0.2s ease',
+                '&:hover': {
+                  backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                },
+              }}
+            >
+              {isDarkMode ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
+            </IconButton>
+          </Tooltip>
         </Box>
 
         <SavedThoughtsSidebar
@@ -622,7 +642,23 @@ function App() {
           }}
         >
           {currentUser && (
-            <NotificationBell isDarkMode={isDarkMode} />
+            <NotificationBell
+              isDarkMode={isDarkMode}
+              onNoteClick={async (noteId) => {
+                if (!currentUser) return;
+                setLoading(true);
+                try {
+                  const response = await axios.get<SimilarThoughtsResponse>(
+                    `/api/notes/${currentUser.id}/similar-to/${noteId}`,
+                  );
+                  applySimilarThoughtsResponse(response.data, { clearComposer: false });
+                } catch (error) {
+                  console.error('Error loading note from notification:', error);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
           )}
 
           {currentUser ? (
@@ -689,20 +725,6 @@ function App() {
             </>
           )}
 
-          <IconButton
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            sx={{
-              backgroundColor: isDarkMode ? '#2d2e2d' : '#ffffff',
-              color: isDarkMode ? '#f1f5f9' : '#2d3748',
-              border: isDarkMode ? '1px solid #404140' : '1px solid #e2e8f0',
-              '&:hover': {
-                backgroundColor: isDarkMode ? '#404140' : '#f7fafc',
-              },
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
-          </IconButton>
         </Box>
 
         {/* Authentication dialog used for login and sign-up flows. */}

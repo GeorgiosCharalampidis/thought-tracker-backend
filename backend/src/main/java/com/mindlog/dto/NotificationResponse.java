@@ -10,7 +10,8 @@ public record NotificationResponse(
         String notePreview,
         String commenterUsername,
         String commentText,
-        LocalDateTime commentedAt
+        LocalDateTime commentedAt,
+        boolean seen
 ) {
     private static final int PREVIEW_MAX_LENGTH = 80;
 
@@ -26,7 +27,8 @@ public record NotificationResponse(
                 preview,
                 comment.getUser().getUsername(),
                 comment.getText(),
-                comment.getCreatedAt()
+                comment.getCreatedAt(),
+                comment.isSeen()
         );
     }
 }

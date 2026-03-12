@@ -19,13 +19,21 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<NotificationResponse>> getUnseenNotifications(Authentication authentication) {
-        return ResponseEntity.ok(notificationService.getUnseenNotifications(authentication));
+    public ResponseEntity<List<NotificationResponse>> getNotifications(Authentication authentication) {
+        return ResponseEntity.ok(notificationService.getNotifications(authentication));
     }
 
     @PostMapping("/mark-seen")
     public ResponseEntity<Void> markAllSeen(Authentication authentication) {
         notificationService.markAllSeen(authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{commentId}/mark-seen")
+    public ResponseEntity<Void> markOneSeen(
+            @PathVariable Long commentId,
+            Authentication authentication) {
+        notificationService.markOneSeen(commentId, authentication);
         return ResponseEntity.noContent().build();
     }
 }

@@ -160,7 +160,7 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
                   Your related thoughts
                 </Typography>
               </Box>
-              {renderNoteCards(ownNotes, ownNoteCardStyle)}
+              {renderNoteCards(ownNotes, ownNoteCardStyle, true)}
             </Box>
           )}
         </Box>

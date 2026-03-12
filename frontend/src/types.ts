@@ -21,6 +21,7 @@ export interface Notification {
   commenterUsername: string;
   commentText: string;
   commentedAt: string;
+  seen: boolean;
 }
 
 export interface Note {

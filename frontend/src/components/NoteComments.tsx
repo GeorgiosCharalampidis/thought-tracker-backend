@@ -79,7 +79,7 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
     }
   };
 
-  const mutedColor = isDarkMode ? '#64748b' : '#94a3b8';
+  const mutedColor = isDarkMode ? '#94a3b8' : '#64748b';
   const textColor = isDarkMode ? '#e2e8f0' : '#374151';
   const borderColor = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
   const inputBg = isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.02)';
