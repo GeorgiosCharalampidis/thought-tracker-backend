@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Button, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+import { Box, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { MenuOpen as MenuOpenIcon } from '@mui/icons-material';
 import { AuthUser, Note } from '../types';
+import NoteComments from './NoteComments';
 
 interface SavedThoughtsSidebarProps {
   currentUser: AuthUser | null;
@@ -165,25 +166,27 @@ function SavedThoughtsSidebar({
             </Typography>
           ) : (
             savedNotes.map((savedNote) => (
-              <Button
+              <Box
                 key={savedNote.id}
-                variant="text"
-                onClick={() => onSelectNote(savedNote)}
                 sx={{
-                  justifyContent: 'flex-start',
-                  alignItems: 'flex-start',
                   px: 1.1,
                   py: 1,
                   borderRadius: 2.5,
-                  textTransform: 'none',
                   backgroundColor: isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.55)',
                   border: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(15,23,42,0.05)',
-                  '&:hover': {
-                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.75)',
-                  },
                 }}
               >
-                <Box sx={{ width: '100%', textAlign: 'left' }}>
+                {/* Clickable header — selects the note */}
+                <Box
+                  onClick={() => onSelectNote(savedNote)}
+                  sx={{
+                    cursor: 'pointer',
+                    borderRadius: 1.5,
+                    '&:hover': {
+                      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)',
+                    },
+                  }}
+                >
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.6}>
                     <Typography sx={{ fontSize: '0.73rem', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
                       {formatHistoryDate(savedNote.date)}
@@ -206,7 +209,15 @@ function SavedThoughtsSidebar({
                     {savedNote.content}
                   </Typography>
                 </Box>
-              </Button>
+
+                {/* Comments section */}
+                <NoteComments
+                  noteId={savedNote.id}
+                  initialCount={savedNote.commentCount ?? 0}
+                  currentUser={currentUser}
+                  isDarkMode={isDarkMode}
+                />
+              </Box>
             ))
           )}
         </Box>
