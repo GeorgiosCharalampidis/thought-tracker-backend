@@ -21,6 +21,7 @@ import {
 import axios from 'axios';
 import AiChatPanel from './components/AiChatPanel';
 import AuthDialog from './components/AuthDialog';
+import NotificationBell from './components/NotificationBell';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
 import SimilarThoughtsSection from './components/SimilarThoughtsSection';
 import ThoughtComposer from './components/ThoughtComposer';
@@ -620,6 +621,10 @@ function App() {
             gap: 1,
           }}
         >
+          {currentUser && (
+            <NotificationBell isDarkMode={isDarkMode} />
+          )}
+
           {currentUser ? (
             <Button
               variant="text"

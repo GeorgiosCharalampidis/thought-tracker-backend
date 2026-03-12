@@ -14,6 +14,15 @@ export interface Comment {
   own: boolean;
 }
 
+export interface Notification {
+  commentId: number;
+  noteId: number;
+  notePreview: string;
+  commenterUsername: string;
+  commentText: string;
+  commentedAt: string;
+}
+
 export interface Note {
   id: number;
   content: string;
