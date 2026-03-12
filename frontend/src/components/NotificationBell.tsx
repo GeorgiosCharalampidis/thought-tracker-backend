@@ -13,6 +13,7 @@ import { Notification } from '../types';
 
 interface NotificationBellProps {
   isDarkMode: boolean;
+  isMobile?: boolean;
   onNoteClick: (noteId: number) => void;
 }
 
@@ -28,7 +29,7 @@ function formatRelativeTime(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function NotificationBell({ isDarkMode, onNoteClick }: NotificationBellProps) {
+function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -92,7 +93,10 @@ function NotificationBell({ isDarkMode, onNoteClick }: NotificationBellProps) {
       <Tooltip title="Notifications">
         <IconButton
           onClick={handleOpen}
-          sx={{
+          size={isMobile ? 'small' : 'medium'}
+          sx={isMobile ? {
+            color: iconColor,
+          } : {
             backgroundColor: bgColor,
             color: iconColor,
             border: `1px solid ${borderColor}`,

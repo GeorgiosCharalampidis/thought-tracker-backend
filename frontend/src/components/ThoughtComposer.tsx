@@ -26,11 +26,11 @@ function ThoughtComposer({
   return (
     <Fade in timeout={800}>
       <Box sx={{ mb: 4 }}>
-        <Box display="flex" alignItems="center" justifyContent="center" mb={4.5}>
+        <Box display="flex" alignItems="center" justifyContent="center" mb={{ xs: 2.5, sm: 4.5 }}>
           <Typography
-            variant="h4"
             sx={{
               fontWeight: 400,
+              fontSize: { xs: '1.1rem', sm: '2.125rem' },
               color: isDarkMode ? '#f1f5f9' : '#2d3748',
             }}
           >
@@ -57,7 +57,7 @@ function ThoughtComposer({
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: '28px !important',
-                  fontSize: '1.1rem',
+                  fontSize: 'clamp(0.85rem, 3vw, 1.1rem)',
                   lineHeight: 1.6,
                   paddingRight: '60px',
                   paddingLeft: '24px',

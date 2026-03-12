@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  AppBar,
+  Backdrop,
   Container,
   Box,
   Typography,
@@ -7,7 +9,9 @@ import {
   CircularProgress,
   Grid,
   IconButton,
+  Toolbar,
   Tooltip,
+  useMediaQuery,
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
@@ -16,6 +20,7 @@ import {
   LightMode as LightModeIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
+  MenuOpen as MenuOpenIcon,
   TextFields as TextFieldsIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
@@ -38,12 +43,12 @@ import {
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = process.env.REACT_APP_API_URL || '';
 
-const createAppTheme = (isDarkMode: boolean) => createTheme({
+const createAppTheme = (isDarkMode: boolean, isMobile: boolean) => createTheme({
   palette: {
     mode: isDarkMode ? 'dark' : 'light',
     background: {
-      default: isDarkMode ? '#202120' : '#f1f5f9',
-      paper: isDarkMode ? '#2d2e2d' : '#ffffff',
+      default: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
+      paper: isDarkMode ? (isMobile ? '#0d0d0d' : '#2d2e2d') : '#ffffff',
     },
     text: {
       primary: isDarkMode ? '#f1f5f9' : '#2d3748',
@@ -414,13 +419,17 @@ function App() {
   };
 
   const handlePrimaryLeftAction = () => {
-    if (!isSidebarOpen && !isSidebarClosing) {
-      openSidebar();
+    if (isSidebarOpen) {
+      // On mobile just close; on desktop toggle the heading
+      if (isMobile) {
+        closeSidebar();
+      } else {
+        setIsAltHeading((previous) => !previous);
+      }
       return;
     }
-
-    if (isSidebarOpen) {
-      setIsAltHeading((previous) => !previous);
+    if (!isSidebarClosing) {
+      openSidebar();
     }
   };
 
@@ -454,12 +463,14 @@ function App() {
     }
   };
 
-  const theme = createAppTheme(isDarkMode);
-  const sidebarWidth = 284;
+  const isMobile = useMediaQuery('(max-width: 600px)');
+  const theme = createAppTheme(isDarkMode, isMobile);
+  const sidebarWidth = isMobile ? Math.min(window.innerWidth * 0.85, 320) : 284;
   const sidebarVisible = isSidebarOpen || isSidebarClosing;
-  const mainContentOffset = isSidebarOpen ? 316 : 96;
+  // On mobile the sidebar overlays content — never push the main content
+  const mainContentOffset = isMobile ? 0 : (isSidebarOpen ? 316 : 96);
   const headingText = isAltHeading ? 'Pause and notice' : 'Share a thought';
-  const thoughtPlaceholder = currentUser
+  const thoughtPlaceholder = (currentUser || isMobile)
     ? 'Write a thought...'
     : 'Write a thought... sign in to save it.';
 
@@ -484,7 +495,7 @@ function App() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+            backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
           }}
         >
           <CircularProgress size={28} sx={{ color: '#667eea' }} />
@@ -495,8 +506,73 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      {/* Mobile top AppBar — replaces the floating buttons on small screens */}
+      {isMobile && (
+        <AppBar position="fixed" elevation={0} sx={{ backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9', zIndex: 1300, transition: 'background-color 0.22s ease' }}>
+          <Toolbar variant="dense" sx={{ gap: 0.5, px: 2, py: 2 }}>
+            <IconButton edge="start" size="small" onClick={handlePrimaryLeftAction} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+              {isSidebarOpen ? <MenuOpenIcon sx={{ fontSize: 20 }} /> : <MenuIcon sx={{ fontSize: 20 }} />}
+            </IconButton>
+            <IconButton size="small" onClick={openChat} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+              <SparkleIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+            <IconButton size="small" onClick={() => setIsDarkMode(!isDarkMode)} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+              {isDarkMode ? <LightModeIcon sx={{ fontSize: 20 }} /> : <DarkModeIcon sx={{ fontSize: 20 }} />}
+            </IconButton>
+            <Box sx={{ flexGrow: 1 }} />
+            {currentUser && (
+              <NotificationBell isDarkMode={isDarkMode} isMobile onNoteClick={async (noteId) => {
+                if (!currentUser) return;
+                setLoading(true);
+                try {
+                  const response = await axios.get<SimilarThoughtsResponse>(`/api/notes/${currentUser.id}/similar-to/${noteId}`);
+                  applySimilarThoughtsResponse(response.data, { clearComposer: false });
+                } catch (error) {
+                  console.error('Error loading note from notification:', error);
+                } finally {
+                  setLoading(false);
+                }
+              }} />
+            )}
+            {currentUser ? (
+              <IconButton size="small" onClick={handleLogout} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+                <LogoutIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            ) : (
+              <>
+                <Button size="small" variant="text" onClick={() => openAuthPrompt('login', null, 'Log in to save thoughts and unlock AI reflections.')} sx={{ borderRadius: 999, px: 1.2, py: 0.5, textTransform: 'none', fontSize: '0.82rem', color: isDarkMode ? '#111827' : '#ffffff', backgroundColor: isDarkMode ? '#ffffff' : '#111827', border: isDarkMode ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', '&:hover': { backgroundColor: isDarkMode ? '#f8fafc' : '#222222' } }}>
+                  Log in
+                </Button>
+                <Button size="small" variant="text" onClick={() => openAuthPrompt('register', null, 'Create an account to save thoughts and unlock AI reflections.')} sx={{ borderRadius: 999, px: 1.2, py: 0.5, textTransform: 'none', fontSize: '0.82rem', color: isDarkMode ? '#f3f4f6' : '#111827', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#ffffff', border: isDarkMode ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', '&:hover': { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.12)' : '#f8fafc' } }}>
+                  Sign up
+                </Button>
+              </>
+            )}
+          </Toolbar>
+        </AppBar>
+      )}
+
+      {/* Backdrop for mobile sidebar */}
+      {isMobile && (
+        <Backdrop open={isSidebarOpen} onClick={closeSidebar} sx={{ zIndex: 1199 }} />
+      )}
+
       {/* Page background and top-level layout wrapper for the app. */}
-      <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: isDarkMode ? '#202120' : '#f1f5f9', paddingTop: showSimilarThoughts ? '12vh' : '28vh' }}>
+      <Box sx={{
+        flexGrow: 1,
+        minHeight: '100vh',
+        backgroundColor: isDarkMode
+          ? (isMobile ? (isSidebarOpen ? '#202120' : '#000000') : '#202120')
+          : (isMobile ? (isSidebarOpen ? '#edf1f6' : '#f1f5f9') : '#f1f5f9'),
+        transition: 'background-color 0.22s ease',
+        paddingTop: isMobile ? '72px' : (showSimilarThoughts ? '12vh' : '28vh'),
+        // On mobile, vertically center the composer when nothing else is shown
+        ...(isMobile && !showSimilarThoughts && !chatOpen && {
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }),
+      }}>
         {/* Left floating action rail: sidebar toggle and AI reflection shortcut. */}
         <Box
           sx={{
@@ -504,7 +580,7 @@ function App() {
             top: 18,
             left: 16,
             zIndex: 1100,
-            display: 'flex',
+            display: { xs: 'none', sm: 'flex' },
             flexDirection: 'column',
             gap: 1,
             pointerEvents: 'none',
@@ -519,11 +595,11 @@ function App() {
                 pointerEvents: isSidebarClosing ? 'none' : 'auto',
                 opacity: isSidebarClosing ? 0 : 1,
                 color: isDarkMode ? '#cbd5e1' : '#475569',
-                backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+                backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
                 border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
                 transition: 'opacity 0.14s ease, background-color 0.2s ease',
                 '&:hover': {
-                  backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                  backgroundColor: isDarkMode ? (isMobile ? '#1a1a1a' : '#262726') : '#eef2f7',
                 },
               }}
             >
@@ -568,10 +644,10 @@ function App() {
                   width: 40,
                   height: 40,
                   color: isDarkMode ? '#cbd5e1' : '#475569',
-                  backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+                  backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
                   border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
                   '&:hover': {
-                    backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                    backgroundColor: isDarkMode ? (isMobile ? '#1a1a1a' : '#262726') : '#eef2f7',
                   },
                 }}
               >
@@ -602,11 +678,11 @@ function App() {
                 height: 40,
                 pointerEvents: 'auto',
                 color: isDarkMode ? '#cbd5e1' : '#475569',
-                backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+                backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
                 border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
                 transition: 'background-color 0.2s ease',
                 '&:hover': {
-                  backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                  backgroundColor: isDarkMode ? (isMobile ? '#1a1a1a' : '#262726') : '#eef2f7',
                 },
               }}
             >
@@ -621,6 +697,7 @@ function App() {
           notesLoading={notesLoading}
           notesError={notesError}
           isDarkMode={isDarkMode}
+          isMobile={isMobile}
           isSidebarOpen={isSidebarOpen}
           isSidebarClosing={isSidebarClosing}
           sidebarWidth={sidebarWidth}
@@ -637,7 +714,7 @@ function App() {
             top: 24,
             right: 24,
             zIndex: 1000,
-            display: 'flex',
+            display: { xs: 'none', sm: 'flex' },
             alignItems: 'center',
             gap: 1,
           }}
@@ -747,7 +824,8 @@ function App() {
         <Box
           sx={{
             ml: `${mainContentOffset}px`,
-            mr: 2,
+            mr: isMobile ? 0 : 2,
+            px: isMobile ? 1 : 0,
             transition: 'margin-left 0.22s ease',
           }}
         >

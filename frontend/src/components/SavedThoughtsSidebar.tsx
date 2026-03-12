@@ -10,6 +10,7 @@ interface SavedThoughtsSidebarProps {
   notesLoading: boolean;
   notesError: string;
   isDarkMode: boolean;
+  isMobile: boolean;
   isSidebarOpen: boolean;
   isSidebarClosing: boolean;
   sidebarWidth: number;
@@ -25,6 +26,7 @@ function SavedThoughtsSidebar({
   notesLoading,
   notesError,
   isDarkMode,
+  isMobile,
   isSidebarOpen,
   isSidebarClosing,
   sidebarWidth,
@@ -33,9 +35,11 @@ function SavedThoughtsSidebar({
   onTransitionEnd,
   formatHistoryDate,
 }: SavedThoughtsSidebarProps) {
-  const sidebarBackground = isSidebarOpen
-    ? (isDarkMode ? '#2c2d2c' : '#edf1f6')
-    : (isDarkMode ? '#202120' : '#f1f5f9');
+  const sidebarBackground = isMobile
+    ? (isDarkMode ? '#000000' : '#f1f5f9')
+    : isSidebarOpen
+      ? (isDarkMode ? '#2c2d2c' : '#edf1f6')
+      : (isDarkMode ? '#202120' : '#f1f5f9');
 
   const scrollTrackColor = isDarkMode ? '#202120' : '#edf1f6';
 
@@ -43,11 +47,11 @@ function SavedThoughtsSidebar({
     <Box
       sx={{
         position: 'fixed',
-        top: 0,
+        top: isMobile ? '64px' : 0,
         left: 0,
         bottom: 0,
         width: sidebarWidth,
-        zIndex: 1000,
+        zIndex: isMobile ? 1200 : 1000,
         transform: isSidebarOpen ? 'translateX(0)' : `translateX(-${sidebarWidth}px)`,
         transition: 'transform 0.22s ease',
         overflow: 'hidden',
@@ -74,7 +78,8 @@ function SavedThoughtsSidebar({
         <Box
           sx={{
             position: 'relative',
-            height: '136px',
+            height: isMobile ? '0px' : '136px',
+            display: isMobile ? 'none' : 'block',
             flexShrink: 0,
             backgroundColor: sidebarBackground,
             borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(15,23,42,0.04)',
