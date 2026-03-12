@@ -6,12 +6,21 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface Comment {
+  id: number;
+  text: string;
+  username: string;
+  createdAt: string;
+  own: boolean;
+}
+
 export interface Note {
   id: number;
   content: string;
   date: string;
   category: string;
   subCategory?: string;
+  commentCount?: number;
 }
 
 export interface AuthUser {

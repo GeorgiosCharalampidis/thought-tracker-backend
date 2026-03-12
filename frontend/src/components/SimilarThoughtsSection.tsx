@@ -1,17 +1,19 @@
 import React from 'react';
 import { Box, Button, Card, CardContent, Chip, Fade, Slide, Typography } from '@mui/material';
-import { Note } from '../types';
+import { Note, AuthUser } from '../types';
+import NoteComments from './NoteComments';
 
 interface SimilarThoughtsSectionProps {
   notes: Note[];
   ownNotes: Note[];
   categoryMessage: string;
   isDarkMode: boolean;
+  currentUser: AuthUser | null;
   onShareAnotherThought: () => void;
 }
 
 
-function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, onShareAnotherThought }: SimilarThoughtsSectionProps) {
+function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, currentUser, onShareAnotherThought }: SimilarThoughtsSectionProps) {
   const cardStyle = {
     minWidth: '200px',
     maxWidth: '400px',
@@ -29,7 +31,7 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
     border: isDarkMode ? '1px solid rgba(129, 140, 248, 0.28)' : '1px solid rgba(102, 126, 234, 0.18)',
   };
 
-  const renderNoteCards = (items: Note[], cardSx = cardStyle) => (
+  const renderNoteCards = (items: Note[], cardSx = cardStyle, showComments = false) => (
     <Box display="flex" flexWrap="wrap" gap={3} justifyContent="center" alignItems="flex-start">
       {items.map((noteItem, index) => (
         <Fade in timeout={600 + index * 200} key={noteItem.id}>
@@ -78,6 +80,14 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
               >
                 {noteItem.content}
               </Typography>
+              {showComments && (
+                <NoteComments
+                  noteId={noteItem.id}
+                  initialCount={noteItem.commentCount ?? 0}
+                  currentUser={currentUser}
+                  isDarkMode={isDarkMode}
+                />
+              )}
             </CardContent>
           </Card>
         </Fade>
@@ -133,7 +143,7 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
 
           {notes.length > 0 && (
             <Box sx={{ width: '100%', mb: ownNotes.length > 0 ? 4.5 : 0 }}>
-              {renderNoteCards(notes)}
+              {renderNoteCards(notes, cardStyle, true)}
             </Box>
           )}
 

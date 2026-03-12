@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Entity
 @Table(name = "comments")
@@ -26,7 +28,16 @@ public class Comment {
     private Note note;
 
     @Setter
+    @Column(nullable = false, length = 500)
     private String text;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    private void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     public Comment() {
     }

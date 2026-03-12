@@ -11,6 +11,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long>{
 
     List<Comment> findByNote_Id(Long noteId);
 
+    List<Comment> findByNote_IdOrderByCreatedAtAsc(Long noteId);
+
     List<Comment> findByUser_IdAndNote_Id(Long userId, Long noteId);
 
 }

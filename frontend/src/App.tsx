@@ -752,6 +752,7 @@ function App() {
                     ownNotes={ownSimilarThoughts}
                     categoryMessage={categoryMessage}
                     isDarkMode={isDarkMode}
+                    currentUser={currentUser}
                     onShareAnotherThought={handleShareAnotherThought}
                   />
                 </Grid>
