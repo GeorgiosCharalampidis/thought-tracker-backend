@@ -34,10 +34,6 @@ function AuthDialog({
   onSubmit,
   onChange,
 }: AuthDialogProps) {
-  const title = authMode === 'login' ? 'Log in' : 'Sign up for free';
-  const fallbackMessage = authMode === 'login'
-    ? 'Log in to save thoughts and get reflections.'
-    : 'Create an account to save thoughts and get reflections.';
 
   const textFieldSx = {
     '& .MuiOutlinedInput-root': {
@@ -70,6 +66,7 @@ function AuthDialog({
       }}
       fullWidth
       maxWidth="xs"
+      sx={{ '& .MuiDialog-paper': { maxWidth: 320 } }}
       PaperProps={{
         elevation: 0,
         sx: {
@@ -80,30 +77,30 @@ function AuthDialog({
           boxShadow: isDarkMode
             ? '0 24px 80px rgba(0,0,0,0.38)'
             : '0 24px 80px rgba(15,23,42,0.10)',
-          minHeight: authMode === 'register' ? 398 : 326,
         },
       }}
     >
-      <DialogContent sx={{ p: 3.25 }}>
+      <DialogContent sx={{ px: 3.25, pt: 3, pb: 3 }}>
         <Typography
           variant="h6"
-          sx={{
-            fontWeight: 400,
-            color: isDarkMode ? '#f8fafc' : '#111827',
-            mb: 0.75,
-          }}
+          sx={{ fontWeight: 500, fontSize: '1.6rem', mb: 0.75 }}
         >
-          {title}
+          {authMode === 'login' ? (
+            <>
+              <Box component="span" sx={{ color: isDarkMode ? '#f8fafc' : '#111827' }}>Log in</Box>
+            </>
+          ) : (
+            <Box component="span" sx={{ color: isDarkMode ? '#f8fafc' : '#111827' }}>Sign up for free</Box>
+          )}
         </Typography>
+
         <Typography
           variant="body2"
-          sx={{
-            color: isDarkMode ? '#9ca3af' : '#6b7280',
-            mb: 2,
-            lineHeight: 1.6,
-          }}
+          sx={{ color: isDarkMode ? '#9ca3af' : '#6b7280', mb: 2, lineHeight: 1.6 }}
         >
-          {authPromptMessage || fallbackMessage}
+          {authMode === 'login'
+            ? 'Log in to save thoughts and get reflections.'
+            : 'Create an account to save thoughts and get reflections.'}
         </Typography>
 
         <Box display="flex" flexDirection="column" gap={1.25}>
@@ -166,7 +163,7 @@ function AuthDialog({
             </Typography>
           )}
 
-          <Box display="flex" gap={1} mt={1}>
+          <Box display="flex" gap={1} mt={1.5}>
             <Button
               variant="text"
               onClick={onClose}

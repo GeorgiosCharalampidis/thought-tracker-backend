@@ -557,7 +557,7 @@ function App() {
                   Log in
                 </Button>
                 <Button size="small" variant="text" onClick={() => openAuthPrompt('register', null, 'Create an account to save thoughts and unlock AI reflections.')} sx={{ borderRadius: 999, px: 1.2, py: 0.5, textTransform: 'none', fontSize: '0.82rem', color: isDarkMode ? '#f3f4f6' : '#111827', backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#ffffff', border: isDarkMode ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', '&:hover': { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.12)' : '#f8fafc' } }}>
-                  Sign up
+                  Sign up for free
                 </Button>
               </>
             )}
