@@ -35,4 +35,67 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     // List distinct categories for a user
     @Query("select distinct n.category from Note n where n.user.id = :userId and n.category is not null")
     List<String> findDistinctCategoriesByUserId(@Param("userId") Long userId);
+
+    // Vector similarity queries using pgvector <=> (cosine distance) operator
+    // distanceThreshold = 1 - similarityThreshold (cosine distance is inverse of cosine similarity)
+
+    @Query(value = """
+            SELECT * FROM notes
+            WHERE user_id = :userId
+              AND (:excludeId = -1 OR id != :excludeId)
+              AND embedding IS NOT NULL
+              AND (embedding <=> CAST(:embedding AS vector)) <= :distanceThreshold
+            ORDER BY embedding <=> CAST(:embedding AS vector)
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Note> findSimilarByUserId(
+            @Param("userId") Long userId,
+            @Param("excludeId") Long excludeId,
+            @Param("embedding") String embedding,
+            @Param("distanceThreshold") float distanceThreshold,
+            @Param("limit") int limit);
+
+    @Query(value = """
+            SELECT * FROM notes
+            WHERE category = :category
+              AND user_id != :userId
+              AND embedding IS NOT NULL
+              AND (embedding <=> CAST(:embedding AS vector)) <= :distanceThreshold
+            ORDER BY embedding <=> CAST(:embedding AS vector)
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Note> findSimilarByCategoryExcludingUser(
+            @Param("category") String category,
+            @Param("userId") Long userId,
+            @Param("embedding") String embedding,
+            @Param("distanceThreshold") float distanceThreshold,
+            @Param("limit") int limit);
+
+    @Query(value = """
+            SELECT * FROM notes
+            WHERE category = :category
+              AND embedding IS NOT NULL
+              AND (embedding <=> CAST(:embedding AS vector)) <= :distanceThreshold
+            ORDER BY embedding <=> CAST(:embedding AS vector)
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Note> findSimilarByCategory(
+            @Param("category") String category,
+            @Param("embedding") String embedding,
+            @Param("distanceThreshold") float distanceThreshold,
+            @Param("limit") int limit);
+
+    @Query(value = """
+            SELECT * FROM notes
+            WHERE user_id != :userId
+              AND embedding IS NOT NULL
+              AND (embedding <=> CAST(:embedding AS vector)) <= :distanceThreshold
+            ORDER BY embedding <=> CAST(:embedding AS vector)
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Note> findSimilarExcludingUser(
+            @Param("userId") Long userId,
+            @Param("embedding") String embedding,
+            @Param("distanceThreshold") float distanceThreshold,
+            @Param("limit") int limit);
 }

@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -54,8 +55,9 @@ public class Note {
     private Integer commentCount;
 
     @Setter
-    @Column(name = "embedding", columnDefinition = "TEXT")
-    private String embeddingJson; // Store embedding as JSON string
+    @Column(name = "embedding", columnDefinition = "vector(1024)")
+    @ColumnTransformer(write = "?::vector")
+    private String embeddingJson; // Store embedding as pgvector text: [0.1,0.2,...]
 
 
     // Default constructor (required by JPA)

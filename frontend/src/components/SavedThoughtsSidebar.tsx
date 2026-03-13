@@ -18,6 +18,7 @@ interface SavedThoughtsSidebarProps {
   onSelectNote: (note: Note) => void;
   onTransitionEnd: () => void;
   formatHistoryDate: (value: string) => string;
+  headerHeight: number;
 }
 
 function SavedThoughtsSidebar({
@@ -34,6 +35,7 @@ function SavedThoughtsSidebar({
   onSelectNote,
   onTransitionEnd,
   formatHistoryDate,
+  headerHeight,
 }: SavedThoughtsSidebarProps) {
   const sidebarBackground = isMobile
     ? (isDarkMode ? '#000000' : '#f1f5f9')
@@ -78,7 +80,7 @@ function SavedThoughtsSidebar({
         <Box
           sx={{
             position: 'relative',
-            height: isMobile ? '0px' : '136px',
+            height: isMobile ? '0px' : `${headerHeight}px`,
             display: isMobile ? 'none' : 'block',
             flexShrink: 0,
             backgroundColor: sidebarBackground,

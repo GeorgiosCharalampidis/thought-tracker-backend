@@ -188,30 +188,42 @@ public class NoteService {
         User currentUser = referenceNote.getUser();
         Long currentUserId = currentUser != null ? currentUser.getId() : null;
         Long referenceNoteId = referenceNote.getId();
-        float[] referenceEmbedding = referenceNote.getEmbedding();
+        String embeddingStr = referenceNote.getEmbeddingJson();
 
-        // Own notes: user's past notes sorted by similarity, thresholded to avoid weak matches.
+        // Own notes: DB-level cosine similarity search via pgvector index
         List<Note> ownNotes = Collections.emptyList();
-        if (currentUserId != null && referenceEmbedding != null) {
-            ownNotes = NoteRepository.findByUser_Id(currentUserId)
-                    .stream()
-                    .filter(n -> referenceNoteId == null || !referenceNoteId.equals(n.getId()))
-                    .filter(n -> n.getEmbedding() != null)
-                    .filter(n -> com.mindlog.util.VectorUtils.cosine(n.getEmbedding(), referenceEmbedding) >= OWN_NOTE_SIMILARITY_THRESHOLD)
-                    .sorted((n1, n2) -> Float.compare(
-                            com.mindlog.util.VectorUtils.cosine(n2.getEmbedding(), referenceEmbedding),
-                            com.mindlog.util.VectorUtils.cosine(n1.getEmbedding(), referenceEmbedding)))
-                    .limit(MAX_OWN_NOTES)
-                    .collect(Collectors.toList());
+        if (currentUserId != null && embeddingStr != null) {
+            float ownDistThreshold = 1.0f - OWN_NOTE_SIMILARITY_THRESHOLD; // 1 - 0.72 = 0.28
+            ownNotes = NoteRepository.findSimilarByUserId(
+                    currentUserId,
+                    referenceNoteId != null ? referenceNoteId : -1L,
+                    embeddingStr,
+                    ownDistThreshold,
+                    MAX_OWN_NOTES);
         }
 
+        // Community notes: fetch top candidates from DB, then apply subcategory boost filter in Java
+        // Use relaxed threshold for DB query so subcategory-boosted matches are included
+        float communityDistThreshold = 1.0f - COMMUNITY_SUBCATEGORY_RELAXED_THRESHOLD; // 1 - 0.62 = 0.38
+        int candidateFetchLimit = MAX_COMMUNITY_NOTES * 4; // fetch extra for Java-side filtering
+
         List<Note> candidateNotes;
-        if (Category.OPEN_REFLECTIONS.getDisplayName().equals(category)) {
-            candidateNotes = NoteRepository.findAll();
+        if (Category.OPEN_REFLECTIONS.getDisplayName().equals(category) || embeddingStr == null) {
+            if (embeddingStr == null) {
+                candidateNotes = currentUserId != null
+                        ? NoteRepository.findByCategoryAndUser_IdNot(category, currentUserId)
+                        : NoteRepository.findByCategory(category);
+            } else {
+                long excludeUserId = currentUserId != null ? currentUserId : -1L;
+                candidateNotes = NoteRepository.findSimilarExcludingUser(
+                        excludeUserId, embeddingStr, communityDistThreshold, candidateFetchLimit);
+            }
         } else if (currentUserId != null) {
-            candidateNotes = NoteRepository.findByCategoryAndUser_IdNot(category, currentUserId);
+            candidateNotes = NoteRepository.findSimilarByCategoryExcludingUser(
+                    category, currentUserId, embeddingStr, communityDistThreshold, candidateFetchLimit);
         } else {
-            candidateNotes = NoteRepository.findByCategory(category);
+            candidateNotes = NoteRepository.findSimilarByCategory(
+                    category, embeddingStr, communityDistThreshold, candidateFetchLimit);
         }
 
         List<Note> orderedNotes = orderNotesBySubcategoryAndSimilarity(candidateNotes, referenceNote).stream()

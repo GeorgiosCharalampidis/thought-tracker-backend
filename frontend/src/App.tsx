@@ -92,6 +92,8 @@ function App() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const chatAbortRef = useRef<AbortController | null>(null);
+  const floatingRailRef = useRef<HTMLDivElement>(null);
+  const [sidebarHeaderHeight, setSidebarHeaderHeight] = useState(168);
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -120,6 +122,17 @@ function App() {
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    const rail = floatingRailRef.current;
+    if (!rail) return;
+    const observer = new ResizeObserver(() => {
+      const rect = rail.getBoundingClientRect();
+      setSidebarHeaderHeight(rect.bottom + 16);
+    });
+    observer.observe(rail);
+    return () => observer.disconnect();
   }, []);
 
   const openAuthPrompt = (mode: AuthMode, action: PendingAction, message: string) => {
@@ -575,6 +588,7 @@ function App() {
       }}>
         {/* Left floating action rail: sidebar toggle and AI reflection shortcut. */}
         <Box
+          ref={floatingRailRef}
           sx={{
             position: 'fixed',
             top: 18,
@@ -705,6 +719,7 @@ function App() {
           onSelectNote={handleSavedNoteSelect}
           onTransitionEnd={handleSidebarTransitionEnd}
           formatHistoryDate={formatHistoryDate}
+          headerHeight={sidebarHeaderHeight}
         />
 
         {/* Top-right account actions and dark mode toggle. */}
