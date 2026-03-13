@@ -67,6 +67,7 @@ function AuthDialog({
       fullWidth
       maxWidth="xs"
       sx={{ '& .MuiDialog-paper': { maxWidth: 320 } }}
+      slotProps={{ backdrop: { sx: { backdropFilter: 'blur(6px) brightness(0.45)', backgroundColor: 'rgba(0,0,0,0.55)' } } }}
       PaperProps={{
         elevation: 0,
         sx: {
