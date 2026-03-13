@@ -60,12 +60,11 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
   const handleClose = () => setAnchorEl(null);
 
   const handleItemClick = async (n: Notification) => {
-    // Mark this specific notification as seen
     if (!n.seen) {
       try {
-        await axios.post(`/api/notifications/${n.commentId}/mark-seen`);
+        await axios.post(`/api/notifications/${n.id}/mark-seen?type=${n.type}`);
         setNotifications(prev =>
-          prev.map(item => item.commentId === n.commentId ? { ...item, seen: true } : item)
+          prev.map(item => item.type === n.type && item.id === n.id ? { ...item, seen: true } : item)
         );
       } catch {
         // Badge will correct itself on next poll
@@ -87,6 +86,7 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
   const unseenBg = isDarkMode ? 'rgba(165,180,252,0.14)' : 'rgba(79,70,229,0.07)';
   const unseenAccent = isDarkMode ? '#818cf8' : '#4f46e5';
   const seenTextColor = isDarkMode ? '#94a3b8' : '#9ca3af';
+  const resonanceAccent = isDarkMode ? '#34d399' : '#059669';
 
   return (
     <>
@@ -158,7 +158,7 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
 
         {notifications.map((n, idx) => (
           <Box
-            key={n.commentId}
+            key={`${n.type}-${n.id}`}
             px={2}
             py={1.5}
             onClick={() => handleItemClick(n)}
@@ -167,7 +167,7 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
               backgroundColor: n.seen ? 'transparent' : unseenBg,
               borderTop: idx === 0 ? `1px solid ${borderColor}` : 'none',
               borderBottom: `1px solid ${borderColor}`,
-              borderLeft: n.seen ? '3px solid transparent' : `3px solid ${unseenAccent}`,
+              borderLeft: n.seen ? '3px solid transparent' : `3px solid ${n.type === 'RESONANCE' ? resonanceAccent : unseenAccent}`,
               '&:hover': { backgroundColor: hoverBg },
               transition: 'background-color 0.15s ease',
             }}
@@ -175,23 +175,46 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
             <Box display="flex" justifyContent="space-between" alignItems="baseline" mb={0.4}>
               <Typography
                 variant="caption"
-                sx={{ fontWeight: n.seen ? 400 : 700, color: n.seen ? seenTextColor : (isDarkMode ? '#a5b4fc' : '#4f46e5') }}
+                sx={{
+                  fontWeight: n.seen ? 400 : 700,
+                  color: n.seen
+                    ? seenTextColor
+                    : n.type === 'RESONANCE'
+                      ? resonanceAccent
+                      : (isDarkMode ? '#a5b4fc' : '#4f46e5'),
+                }}
               >
-                {n.commenterUsername}
+                {n.type === 'RESONANCE' ? 'Resonance' : n.actorUsername}
               </Typography>
               <Typography variant="caption" sx={{ color: mutedColor, fontSize: '0.72rem' }}>
-                {formatRelativeTime(n.commentedAt)}
+                {formatRelativeTime(n.occurredAt)}
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ color: n.seen ? seenTextColor : textColor, mb: 0.5 }}>
-              {n.commentText}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: n.seen ? mutedColor : previewColor, fontStyle: 'italic', lineHeight: 1.4, display: 'block' }}
-            >
-              on: {n.notePreview}
-            </Typography>
+            {n.type === 'RESONANCE' ? (
+              <>
+                <Typography variant="body2" sx={{ color: n.seen ? seenTextColor : textColor, mb: 0.5, fontStyle: 'italic' }}>
+                  Someone resonated with your thought
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: n.seen ? mutedColor : previewColor, lineHeight: 1.4, display: 'block' }}
+                >
+                  their thought: {n.bodyText}
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Typography variant="body2" sx={{ color: n.seen ? seenTextColor : textColor, mb: 0.5 }}>
+                  {n.bodyText}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ color: n.seen ? mutedColor : previewColor, fontStyle: 'italic', lineHeight: 1.4, display: 'block' }}
+                >
+                  on: {n.notePreview}
+                </Typography>
+              </>
+            )}
           </Box>
         ))}
       </Popover>

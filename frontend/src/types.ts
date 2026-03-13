@@ -15,12 +15,13 @@ export interface Comment {
 }
 
 export interface Notification {
-  commentId: number;
+  id: number;
+  type: 'COMMENT' | 'RESONANCE';
   noteId: number;
   notePreview: string;
-  commenterUsername: string;
-  commentText: string;
-  commentedAt: string;
+  actorUsername: string | null;
+  bodyText: string;
+  occurredAt: string;
   seen: boolean;
 }
 

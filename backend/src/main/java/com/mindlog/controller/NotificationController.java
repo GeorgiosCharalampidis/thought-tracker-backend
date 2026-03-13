@@ -29,11 +29,12 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{commentId}/mark-seen")
+    @PostMapping("/{id}/mark-seen")
     public ResponseEntity<Void> markOneSeen(
-            @PathVariable Long commentId,
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "COMMENT") String type,
             Authentication authentication) {
-        notificationService.markOneSeen(commentId, authentication);
+        notificationService.markOneSeen(id, type, authentication);
         return ResponseEntity.noContent().build();
     }
 }

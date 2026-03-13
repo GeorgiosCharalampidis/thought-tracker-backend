@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { MenuOpen as MenuOpenIcon } from '@mui/icons-material';
 import { AuthUser, Note } from '../types';
-import NoteComments from './NoteComments';
+import NoteStatsRow from './NoteStatsRow';
 
 interface SavedThoughtsSidebarProps {
   currentUser: AuthUser | null;
@@ -217,13 +217,15 @@ function SavedThoughtsSidebar({
                   </Typography>
                 </Box>
 
-                {/* Comments section */}
-                <NoteComments
-                  noteId={savedNote.id}
-                  initialCount={savedNote.commentCount ?? 0}
-                  currentUser={currentUser}
-                  isDarkMode={isDarkMode}
-                />
+                {currentUser && (
+                  <NoteStatsRow
+                    noteId={savedNote.id}
+                    userId={currentUser.id}
+                    commentCount={savedNote.commentCount ?? 0}
+                    currentUser={currentUser}
+                    isDarkMode={isDarkMode}
+                  />
+                )}
               </Box>
             ))
           )}

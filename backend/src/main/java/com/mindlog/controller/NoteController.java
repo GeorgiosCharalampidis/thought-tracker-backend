@@ -1,8 +1,10 @@
 package com.mindlog.controller;
 
 import com.mindlog.dto.ChatRequest;
+import com.mindlog.dto.ResonanceSnippetResponse;
 import com.mindlog.dto.SimilarThoughtsResponse;
 import com.mindlog.service.NoteService;
+import com.mindlog.service.ResonanceService;
 import com.mindlog.service.UserService;
 import com.mindlog.model.Note;
 import com.mindlog.model.User;
@@ -21,10 +23,12 @@ public class NoteController {
 
     private final NoteService NoteService;
     private final UserService userService;
+    private final ResonanceService resonanceService;
 
-    public NoteController(NoteService NoteService, UserService userService) {
+    public NoteController(NoteService NoteService, UserService userService, ResonanceService resonanceService) {
         this.NoteService = NoteService;
         this.userService = userService;
+        this.resonanceService = resonanceService;
     }
 
     @PostMapping("/preview")
@@ -151,6 +155,15 @@ public class NoteController {
     public String getUserNotesSummary(@PathVariable Long userId, Authentication authentication) {
         userService.requireAuthorizedUser(userId, authentication);
         return userService.getAiReflection(userId);
+    }
+
+    @GetMapping("/{userId}/{noteId}/resonances")
+    public ResponseEntity<List<ResonanceSnippetResponse>> getResonancesForNote(
+            @PathVariable Long userId,
+            @PathVariable Long noteId,
+            Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
+        return ResponseEntity.ok(resonanceService.getResonancesForNote(noteId, userId));
     }
 
     @PostMapping("/{userId}/chat")

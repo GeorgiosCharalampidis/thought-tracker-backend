@@ -41,12 +41,14 @@ public class NoteService {
     private final UserService userService;
     private final EmbeddingService embeddingService;
     private final AiService aiService;
+    private final ResonanceService resonanceService;
 
-    public NoteService(NoteRepository NoteRepository, UserService userService, EmbeddingService embeddingService, AiService aiService) {
+    public NoteService(NoteRepository NoteRepository, UserService userService, EmbeddingService embeddingService, AiService aiService, ResonanceService resonanceService) {
         this.NoteRepository = NoteRepository;
         this.userService = userService;
         this.embeddingService = embeddingService;
         this.aiService = aiService;
+        this.resonanceService = resonanceService;
     }
 
     public SimilarThoughtsResponse createNoteWithValidation(Long userId, Note note) {
@@ -62,7 +64,15 @@ public class NoteService {
             if (createdNote == null || createdNote.getId() == null) {
                 return createInvalidInputResponse("Failed to create note.");
             }
-            return buildSimilarThoughtsResponse(createdNote);
+            SimilarThoughtsResponse response = buildSimilarThoughtsResponse(createdNote);
+            if (response.isInputAccepted() && response.getNotes() != null && !response.getNotes().isEmpty()) {
+                try {
+                    resonanceService.createResonancesForCommunityNotes(createdNote, response.getNotes());
+                } catch (Exception e) {
+                    logger.warn("Resonance creation failed (non-fatal): {}", e.getMessage());
+                }
+            }
+            return response;
         } catch (Exception e) {
             return createInvalidInputResponse("Something went wrong. Please try again.");
         }
