@@ -16,6 +16,7 @@ import {
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
   AutoAwesome as SparkleIcon,
+  BarChart as InsightsIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
   Logout as LogoutIcon,
@@ -26,6 +27,7 @@ import {
 import axios from 'axios';
 import AiChatPanel from './components/AiChatPanel';
 import AuthDialog from './components/AuthDialog';
+import InsightsPanel from './components/InsightsPanel';
 import NotificationBell from './components/NotificationBell';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
 import SimilarThoughtsSection from './components/SimilarThoughtsSection';
@@ -119,9 +121,11 @@ function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(false);
+  const [streakVisible, setStreakVisible] = useState(false);
+  const streakShownRef = useRef(false);
   const chatAbortRef = useRef<AbortController | null>(null);
   const floatingRailRef = useRef<HTMLDivElement>(null);
-  const [sidebarHeaderHeight, setSidebarHeaderHeight] = useState(168);
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -152,16 +156,9 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  useEffect(() => {
-    const rail = floatingRailRef.current;
-    if (!rail) return;
-    const observer = new ResizeObserver(() => {
-      const rect = rail.getBoundingClientRect();
-      setSidebarHeaderHeight(rect.bottom + 16);
-    });
-    observer.observe(rail);
-    return () => observer.disconnect();
-  }, []);
+  // Rail has: menu, chat, insights (logged-in only), dark mode — each 40px with 8px gaps, starting at top 18px
+  const railButtonCount = currentUser ? 4 : 3;
+  const sidebarHeaderHeight = 18 + railButtonCount * 40 + (railButtonCount - 1) * 8 + 20;
 
   const openAuthPrompt = (mode: AuthMode, action: PendingAction, message: string) => {
     setAuthMode(mode);
@@ -506,6 +503,15 @@ function App() {
 
   const isMobile = useMediaQuery('(max-width: 600px)');
   const streak = computeStreak(savedNotes);
+
+  useEffect(() => {
+    if (streak > 0 && currentUser && !streakShownRef.current) {
+      streakShownRef.current = true;
+      setStreakVisible(true);
+      const timer = setTimeout(() => setStreakVisible(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [streak, currentUser]);
   const theme = createAppTheme(isDarkMode, isMobile);
   const sidebarWidth = isMobile ? Math.min(window.innerWidth * 0.85, 320) : 284;
   const sidebarVisible = isSidebarOpen || isSidebarClosing;
@@ -558,6 +564,11 @@ function App() {
             <IconButton size="small" onClick={openChat} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
               <SparkleIcon sx={{ fontSize: 20 }} />
             </IconButton>
+            {currentUser && (
+              <IconButton size="small" onClick={() => setInsightsOpen(true)} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+                <InsightsIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            )}
             <IconButton size="small" onClick={() => setIsDarkMode(!isDarkMode)} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
               {isDarkMode ? <LightModeIcon sx={{ fontSize: 20 }} /> : <DarkModeIcon sx={{ fontSize: 20 }} />}
             </IconButton>
@@ -599,7 +610,7 @@ function App() {
         <Backdrop open={isSidebarOpen} onClick={closeSidebar} sx={{ zIndex: 1199 }} />
       )}
 
-      {/* Centered streak indicator */}
+      {/* Centered streak indicator — shown once on load, then fades out */}
       {currentUser && streak > 0 && (
         <Box sx={{
           position: 'fixed',
@@ -615,6 +626,10 @@ function App() {
           userSelect: 'none',
           whiteSpace: 'nowrap',
           pointerEvents: 'none',
+          opacity: streakVisible ? 1 : 0,
+          transition: streakVisible
+            ? 'opacity 0.5s ease'
+            : 'opacity 1.2s ease',
         }}>
           🔥 {streak}-day streak
         </Box>
@@ -638,7 +653,6 @@ function App() {
       }}>
         {/* Left floating action rail: sidebar toggle and AI reflection shortcut. */}
         <Box
-          ref={floatingRailRef}
           sx={{
             position: 'fixed',
             top: 18,
@@ -733,6 +747,59 @@ function App() {
               )}
             </Box>
           </Tooltip>
+
+          {currentUser && (
+            <Tooltip
+              title="My Insights"
+              placement="right"
+              disableHoverListener={sidebarVisible}
+              disableFocusListener={sidebarVisible}
+              disableTouchListener={sidebarVisible}
+            >
+              <Box
+                onClick={() => setInsightsOpen(true)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  width: 'fit-content',
+                  height: 40,
+                  pointerEvents: 'auto',
+                  pl: 0,
+                  pr: isSidebarOpen ? 0.9 : 0,
+                  py: 0,
+                  borderRadius: 999,
+                  cursor: 'pointer',
+                  opacity: isSidebarClosing ? 0.72 : 1,
+                  transition: 'background-color 0.2s ease, opacity 0.14s ease',
+                  backgroundColor: 'transparent',
+                  '&:hover': {
+                    backgroundColor: isSidebarOpen
+                      ? (isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)')
+                      : 'transparent',
+                  },
+                }}
+              >
+                <IconButton
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    pointerEvents: 'none',
+                    color: isDarkMode ? '#cbd5e1' : '#475569',
+                    backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
+                    border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                  }}
+                >
+                  <InsightsIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+                {isSidebarOpen && (
+                  <Typography sx={{ pr: 0.15, fontSize: '0.86rem', color: isDarkMode ? '#cbd5e1' : '#475569', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                    My Insights
+                  </Typography>
+                )}
+              </Box>
+            </Tooltip>
+          )}
 
           <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'} placement="right">
             <IconButton
@@ -872,6 +939,13 @@ function App() {
           )}
 
         </Box>
+
+        <InsightsPanel
+          open={insightsOpen}
+          onClose={() => setInsightsOpen(false)}
+          notes={savedNotes}
+          isDarkMode={isDarkMode}
+        />
 
         {/* Authentication dialog used for login and sign-up flows. */}
         <AuthDialog

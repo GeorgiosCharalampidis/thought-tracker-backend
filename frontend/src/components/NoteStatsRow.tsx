@@ -125,7 +125,7 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
   const commentActiveColor = isDarkMode ? '#a5b4fc' : '#4f46e5';
 
   return (
-    <Box mt={1.5} pt={1} sx={{ borderTop: `1px solid ${borderColor}` }}>
+    <Box mt={1} pt={0}>
       {/* Icon row */}
       <Box display="flex" alignItems="center" gap={1.5}>
         <Box

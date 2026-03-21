@@ -66,7 +66,7 @@ function NoteResonances({ noteId, userId, currentUser, isDarkMode }: NoteResonan
   const resonanceColor = isDarkMode ? '#34d399' : '#059669';
 
   return (
-    <Box mt={1.5} borderTop={`1px solid ${borderColor}`} pt={1.5}>
+    <Box mt={1.5} pt={1.5}>
       <Box
         display="flex"
         alignItems="center"

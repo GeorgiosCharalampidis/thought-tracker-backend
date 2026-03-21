@@ -86,7 +86,7 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
   const inputBg = isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.02)';
 
   return (
-    <Box mt={2} borderTop={`1px solid ${borderColor}`} pt={1.5}>
+    <Box mt={2} pt={1.5}>
       {/* Toggle button */}
       <Box
         display="flex"
