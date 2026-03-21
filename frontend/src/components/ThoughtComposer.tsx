@@ -62,22 +62,20 @@ function ThoughtComposer({
                   paddingRight: '60px',
                   paddingLeft: '24px',
                   minHeight: '56px',
-                  backgroundColor: isDarkMode ? '#313130' : 'transparent',
-                  color: isDarkMode ? '#f1f5f9' : 'inherit',
+                  backgroundColor: isDarkMode ? '#313130' : '#ffffff',
+                  color: isDarkMode ? '#f1f5f9' : '#1e293b',
                   '& fieldset': {
-                    borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
-                    borderRadius: '28px !important',
+                    border: 'none',
                   },
                   '&:hover fieldset': {
-                    borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
+                    border: 'none',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: isDarkMode ? '#404140' : 'rgba(0, 0, 0, 0.23)',
-                    borderWidth: '1px',
+                    border: 'none',
                   },
                 },
                 '& .MuiInputBase-input': {
-                  color: isDarkMode ? '#f1f5f9' : 'inherit',
+                  color: isDarkMode ? '#f1f5f9' : '#1e293b',
                   '&::placeholder': {
                     opacity: 0.7,
                     fontStyle: 'italic',

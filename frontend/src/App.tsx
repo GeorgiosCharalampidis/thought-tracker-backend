@@ -673,11 +673,12 @@ function App() {
                 pointerEvents: isSidebarClosing ? 'none' : 'auto',
                 opacity: isSidebarClosing ? 0 : 1,
                 color: isDarkMode ? '#cbd5e1' : '#475569',
-                backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
-                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-                transition: 'opacity 0.14s ease, background-color 0.2s ease',
+                backgroundColor: 'transparent',
+                border: '1px solid transparent',
+                transition: 'opacity 0.14s ease, background-color 0.2s ease, border-color 0.2s ease',
                 '&:hover': {
-                  backgroundColor: isDarkMode ? (isMobile ? '#1a1a1a' : '#262726') : '#eef2f7',
+                  backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
                 },
               }}
             >
@@ -722,10 +723,12 @@ function App() {
                   width: 40,
                   height: 40,
                   color: isDarkMode ? '#cbd5e1' : '#475569',
-                  backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
-                  border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  transition: 'background-color 0.2s ease, border-color 0.2s ease',
                   '&:hover': {
-                    backgroundColor: isDarkMode ? (isMobile ? '#1a1a1a' : '#262726') : '#eef2f7',
+                    backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
                   },
                 }}
               >
@@ -778,16 +781,22 @@ function App() {
                       ? (isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)')
                       : 'transparent',
                   },
+                  '&:hover .insights-icon-btn': {
+                    backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
+                  },
                 }}
               >
                 <IconButton
+                  className="insights-icon-btn"
                   sx={{
                     width: 40,
                     height: 40,
                     pointerEvents: 'none',
                     color: isDarkMode ? '#cbd5e1' : '#475569',
-                    backgroundColor: isDarkMode ? '#202120' : '#f1f5f9',
-                    border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
+                    backgroundColor: 'transparent',
+                    border: '1px solid transparent',
+                    transition: 'background-color 0.2s ease, border-color 0.2s ease',
                   }}
                 >
                   <InsightsIcon sx={{ fontSize: 18 }} />
@@ -809,11 +818,12 @@ function App() {
                 height: 40,
                 pointerEvents: 'auto',
                 color: isDarkMode ? '#cbd5e1' : '#475569',
-                backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9',
-                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(15,23,42,0.08)',
-                transition: 'background-color 0.2s ease',
+                backgroundColor: 'transparent',
+                border: '1px solid transparent',
+                transition: 'background-color 0.2s ease, border-color 0.2s ease',
                 '&:hover': {
-                  backgroundColor: isDarkMode ? (isMobile ? '#1a1a1a' : '#262726') : '#eef2f7',
+                  backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
                 },
               }}
             >
@@ -886,10 +896,12 @@ function App() {
                 textTransform: 'none',
                 fontSize: '0.92rem',
                 color: isDarkMode ? '#cbd5e1' : '#475569',
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.72)',
-                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
+                backgroundColor: 'transparent',
+                border: '1px solid transparent',
+                transition: 'background-color 0.2s ease, border-color 0.2s ease',
                 '&:hover': {
                   backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)',
+                  borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
                 },
               }}
             >

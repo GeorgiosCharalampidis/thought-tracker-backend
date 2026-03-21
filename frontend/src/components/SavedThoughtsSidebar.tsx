@@ -125,7 +125,7 @@ function SavedThoughtsSidebar({
   const sidebarBackground = isMobile
     ? (isDarkMode ? '#000000' : '#f1f5f9')
     : isSidebarOpen
-      ? (isDarkMode ? '#2c2d2c' : '#edf1f6')
+      ? (isDarkMode ? '#161716' : '#edf1f6')
       : (isDarkMode ? '#202120' : '#f1f5f9');
 
   const scrollTrackColor = isDarkMode ? '#202120' : '#edf1f6';

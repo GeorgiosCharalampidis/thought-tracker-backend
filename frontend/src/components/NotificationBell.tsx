@@ -97,11 +97,14 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
           sx={isMobile ? {
             color: iconColor,
           } : {
-            backgroundColor: bgColor,
+            backgroundColor: 'transparent',
             color: iconColor,
-            border: `1px solid ${borderColor}`,
-            '&:hover': { backgroundColor: isDarkMode ? '#404140' : '#f7fafc' },
-            transition: 'all 0.2s ease',
+            border: '1px solid transparent',
+            '&:hover': {
+              backgroundColor: isDarkMode ? '#404140' : '#f7fafc',
+              borderColor: borderColor,
+            },
+            transition: 'background-color 0.2s ease, border-color 0.2s ease',
           }}
         >
           <Badge
