@@ -1,6 +1,7 @@
-import React from 'react';
-import { Box, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
-import { MenuOpen as MenuOpenIcon } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { Box, Button, CircularProgress, IconButton, Paper, TextField, Tooltip, Typography } from '@mui/material';
+import { Edit as EditIcon, MenuOpen as MenuOpenIcon } from '@mui/icons-material';
+import axios from 'axios';
 import { AuthUser, Note } from '../types';
 import NoteStatsRow from './NoteStatsRow';
 
@@ -19,7 +20,15 @@ interface SavedThoughtsSidebarProps {
   onTransitionEnd: () => void;
   formatHistoryDate: (value: string) => string;
   headerHeight: number;
+  onNoteUpdated: (noteId: number, newContent: string) => void;
 }
+
+const toLocalDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 function SavedThoughtsSidebar({
   currentUser,
@@ -36,7 +45,51 @@ function SavedThoughtsSidebar({
   onTransitionEnd,
   formatHistoryDate,
   headerHeight,
+  onNoteUpdated,
 }: SavedThoughtsSidebarProps) {
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  const todayStr = toLocalDateStr(new Date());
+
+  const startEditing = (note: Note) => {
+    setEditingNoteId(note.id);
+    setEditDraft(note.content);
+    setEditError('');
+  };
+
+  const cancelEditing = () => {
+    setEditingNoteId(null);
+    setEditDraft('');
+    setEditError('');
+  };
+
+  const saveEdit = async (note: Note) => {
+    if (!currentUser || !editDraft.trim() || editDraft.trim() === note.content) {
+      cancelEditing();
+      return;
+    }
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await axios.put(`/api/notes/${currentUser.id}/${note.id}`, { content: editDraft.trim() });
+      onNoteUpdated(note.id, editDraft.trim());
+      setEditingNoteId(null);
+      setEditDraft('');
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const msg = error.response?.data;
+        setEditError(typeof msg === 'string' && msg.trim() ? msg : 'Could not save changes.');
+      } else {
+        setEditError('Could not save changes.');
+      }
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const sidebarBackground = isMobile
     ? (isDarkMode ? '#000000' : '#f1f5f9')
     : isSidebarOpen
@@ -44,6 +97,9 @@ function SavedThoughtsSidebar({
       : (isDarkMode ? '#202120' : '#f1f5f9');
 
   const scrollTrackColor = isDarkMode ? '#202120' : '#edf1f6';
+  const mutedColor = isDarkMode ? '#64748b' : '#94a3b8';
+  const textColor = isDarkMode ? '#e5e7eb' : '#1f2937';
+  const borderColor = isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(15,23,42,0.05)';
 
   return (
     <Box
@@ -172,62 +228,130 @@ function SavedThoughtsSidebar({
               No saved thoughts yet.
             </Typography>
           ) : (
-            savedNotes.map((savedNote) => (
-              <Box
-                key={savedNote.id}
-                sx={{
-                  px: 1.1,
-                  py: 1,
-                  borderRadius: 2.5,
-                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.55)',
-                  border: isDarkMode ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(15,23,42,0.05)',
-                }}
-              >
-                {/* Clickable header — selects the note */}
+            savedNotes.map((savedNote) => {
+              const isToday = savedNote.date === todayStr;
+              const isEditing = editingNoteId === savedNote.id;
+
+              return (
                 <Box
-                  onClick={() => onSelectNote(savedNote)}
+                  key={savedNote.id}
                   sx={{
-                    cursor: 'pointer',
-                    borderRadius: 1.5,
-                    '&:hover': {
-                      backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)',
-                    },
+                    px: 1.1,
+                    py: 1,
+                    borderRadius: 2.5,
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.55)',
+                    border: `1px solid ${borderColor}`,
+                    transition: 'background-color 0.12s ease',
+                    ...(!isEditing && {
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.85)',
+                      },
+                    }),
                   }}
                 >
-                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.6}>
-                    <Typography sx={{ fontSize: '0.73rem', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
-                      {formatHistoryDate(savedNote.date)}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.73rem', color: isDarkMode ? '#a8b0bd' : '#64748b' }}>
-                      {savedNote.category}
-                    </Typography>
-                  </Box>
-                  <Typography
-                    sx={{
-                      fontSize: '0.87rem',
-                      lineHeight: 1.45,
-                      color: isDarkMode ? '#e5e7eb' : '#1f2937',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {savedNote.content}
-                  </Typography>
-                </Box>
+                  {isEditing ? (
+                    <Box>
+                      <TextField
+                        value={editDraft}
+                        onChange={e => setEditDraft(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Escape') cancelEditing();
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(savedNote);
+                        }}
+                        multiline
+                        fullWidth
+                        autoFocus
+                        minRows={3}
+                        maxRows={8}
+                        inputProps={{ maxLength: 2000 }}
+                        sx={{
+                          mb: 1,
+                          '& .MuiOutlinedInput-root': {
+                            fontSize: '0.87rem',
+                            backgroundColor: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(15,23,42,0.02)',
+                            '& fieldset': { borderColor },
+                            '&:hover fieldset': { borderColor },
+                            '&.Mui-focused fieldset': { borderColor: '#667eea' },
+                          },
+                          '& .MuiInputBase-input': { color: textColor },
+                        }}
+                      />
+                      {editError && (
+                        <Typography sx={{ fontSize: '0.78rem', color: '#ef4444', mb: 0.75 }}>
+                          {editError}
+                        </Typography>
+                      )}
+                      <Box display="flex" gap={1} alignItems="center">
+                        <Button
+                          size="small"
+                          onClick={() => saveEdit(savedNote)}
+                          disabled={editSaving || !editDraft.trim()}
+                          sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#667eea', minWidth: 0, px: 0.5, py: 0.25 }}
+                        >
+                          {editSaving ? <CircularProgress size={12} /> : 'Save'}
+                        </Button>
+                        <Button
+                          size="small"
+                          onClick={cancelEditing}
+                          disabled={editSaving}
+                          sx={{ textTransform: 'none', fontSize: '0.8rem', color: mutedColor, minWidth: 0, px: 0.5, py: 0.25 }}
+                        >
+                          Cancel
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      onClick={() => onSelectNote(savedNote)}
+                      sx={{
+                        borderRadius: 1.5,
+                      }}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.6}>
+                        <Typography sx={{ fontSize: '0.73rem', color: isDarkMode ? '#94a3b8' : '#64748b' }}>
+                          {formatHistoryDate(savedNote.date)} · {savedNote.category}
+                        </Typography>
+                        {isToday && (
+                          <Tooltip title="Edit" placement="top">
+                            <IconButton
+                              size="small"
+                              onClick={e => { e.stopPropagation(); startEditing(savedNote); }}
+                              sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#667eea' } }}
+                            >
+                              <EditIcon sx={{ fontSize: '0.85rem' }} />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                      <Typography
+                        sx={{
+                          fontSize: '0.87rem',
+                          lineHeight: 1.45,
+                          color: textColor,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {savedNote.content}
+                      </Typography>
+                    </Box>
+                  )}
 
-                {currentUser && (
-                  <NoteStatsRow
-                    noteId={savedNote.id}
-                    userId={currentUser.id}
-                    commentCount={savedNote.commentCount ?? 0}
-                    currentUser={currentUser}
-                    isDarkMode={isDarkMode}
-                  />
-                )}
-              </Box>
-            ))
+                  {currentUser && !isEditing && (
+                    <NoteStatsRow
+                      noteId={savedNote.id}
+                      userId={currentUser.id}
+                      commentCount={savedNote.commentCount ?? 0}
+                      currentUser={currentUser}
+                      isDarkMode={isDarkMode}
+                    />
+                  )}
+                </Box>
+              );
+            })
           )}
         </Box>
       </Paper>
@@ -236,4 +360,3 @@ function SavedThoughtsSidebar({
 }
 
 export default SavedThoughtsSidebar;
-

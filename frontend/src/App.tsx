@@ -60,6 +60,34 @@ const createAppTheme = (isDarkMode: boolean, isMobile: boolean) => createTheme({
   },
 });
 
+const toLocalDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const computeStreak = (notes: Note[]): number => {
+  const dates = new Set(notes.map(n => n.date));
+  const today = new Date();
+  const todayStr = toLocalDateStr(today);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = toLocalDateStr(yesterday);
+
+  const current = dates.has(todayStr) ? new Date(today)
+    : dates.has(yesterdayStr) ? new Date(yesterday)
+    : null;
+  if (!current) return 0;
+
+  let streak = 0;
+  while (dates.has(toLocalDateStr(current))) {
+    streak++;
+    current.setDate(current.getDate() - 1);
+  }
+  return streak;
+};
+
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (axios.isAxiosError(error)) {
     const responseMessage = error.response?.data;
@@ -477,6 +505,7 @@ function App() {
   };
 
   const isMobile = useMediaQuery('(max-width: 600px)');
+  const streak = computeStreak(savedNotes);
   const theme = createAppTheme(isDarkMode, isMobile);
   const sidebarWidth = isMobile ? Math.min(window.innerWidth * 0.85, 320) : 284;
   const sidebarVisible = isSidebarOpen || isSidebarClosing;
@@ -568,6 +597,27 @@ function App() {
       {/* Backdrop for mobile sidebar */}
       {isMobile && (
         <Backdrop open={isSidebarOpen} onClick={closeSidebar} sx={{ zIndex: 1199 }} />
+      )}
+
+      {/* Centered streak indicator */}
+      {currentUser && streak > 0 && (
+        <Box sx={{
+          position: 'fixed',
+          top: isMobile ? 76 : 24,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.5,
+          fontSize: '0.95rem',
+          color: isDarkMode ? '#cbd5e1' : '#475569',
+          userSelect: 'none',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+        }}>
+          🔥 {streak}-day streak
+        </Box>
       )}
 
       {/* Page background and top-level layout wrapper for the app. */}
@@ -720,6 +770,9 @@ function App() {
           onTransitionEnd={handleSidebarTransitionEnd}
           formatHistoryDate={formatHistoryDate}
           headerHeight={sidebarHeaderHeight}
+          onNoteUpdated={(noteId, newContent) => {
+            setSavedNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: newContent } : n));
+          }}
         />
 
         {/* Top-right account actions and dark mode toggle. */}
@@ -839,9 +892,9 @@ function App() {
         <Box
           sx={{
             ml: `${mainContentOffset}px`,
-            mr: isMobile ? 0 : 2,
+            mr: isMobile ? 0 : (isSidebarOpen ? 0 : '96px'),
             px: isMobile ? 1 : 0,
-            transition: 'margin-left 0.22s ease',
+            transition: 'margin-left 0.22s ease, margin-right 0.22s ease',
           }}
         >
           <Container maxWidth="lg">
