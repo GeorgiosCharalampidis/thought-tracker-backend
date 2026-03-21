@@ -59,3 +59,16 @@ export interface SimilarThoughtsResponse {
   validationMessage?: string;
 }
 
+export interface DailyPrompt {
+  promptIndex: number;
+  question: string;
+  userAnswerText?: string;
+}
+
+export interface CommunityMoodEntry {
+  domainName: string;
+  color: string;
+  count: number;
+  percentage: number;
+}
+

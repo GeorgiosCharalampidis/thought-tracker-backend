@@ -27,6 +27,7 @@ import {
 import axios from 'axios';
 import AiChatPanel from './components/AiChatPanel';
 import AuthDialog from './components/AuthDialog';
+import DailyPromptCard from './components/DailyPromptCard';
 import InsightsPanel from './components/InsightsPanel';
 import NotificationBell from './components/NotificationBell';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
@@ -37,6 +38,8 @@ import {
   AuthResponse,
   AuthUser,
   ChatMessage,
+  CommunityMoodEntry,
+  DailyPrompt,
   Note,
   PendingAction,
   SimilarThoughtsResponse,
@@ -147,6 +150,9 @@ function App() {
     email: '',
     password: '',
   });
+  const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
+  const [communityMood, setCommunityMood] = useState<CommunityMoodEntry[]>([]);
+  const [communityMoodLoading, setCommunityMoodLoading] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -248,13 +254,48 @@ function App() {
     bootstrapAuth();
   }, []);
 
+  const loadDailyPrompt = async () => {
+    try {
+      const response = await axios.get<DailyPrompt>('/api/daily-prompt');
+      setDailyPrompt(response.data);
+    } catch (error) {
+      console.error('Error loading daily prompt:', error);
+    }
+  };
+
+  const handleSubmitPromptAnswer = async (answerText: string) => {
+    if (!dailyPrompt) return;
+    await axios.post(`/api/daily-prompt/${dailyPrompt.promptIndex}/answer`, { answerText });
+    setDailyPrompt((prev) => prev ? { ...prev, userAnswerText: answerText } : prev);
+  };
+
+  const handleLoadPromptAnswers = async (): Promise<string[]> => {
+    if (!dailyPrompt) return [];
+    const response = await axios.get<{ answerText: string }[]>(`/api/daily-prompt/${dailyPrompt.promptIndex}/answers`);
+    return response.data.map((a) => a.answerText);
+  };
+
+  const loadCommunityMood = async () => {
+    setCommunityMoodLoading(true);
+    try {
+      const response = await axios.get<CommunityMoodEntry[]>('/api/community/mood');
+      setCommunityMood(response.data);
+    } catch (error) {
+      console.error('Error loading community mood:', error);
+    } finally {
+      setCommunityMoodLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (currentUser) {
       void loadNotes(currentUser.id);
+      void loadDailyPrompt();
       return;
     }
 
     setSavedNotes([]);
+    setDailyPrompt(null);
     setNotesError('');
     setNotesLoading(false);
     resetJournalState();
@@ -565,7 +606,7 @@ function App() {
               <SparkleIcon sx={{ fontSize: 20 }} />
             </IconButton>
             {currentUser && (
-              <IconButton size="small" onClick={() => setInsightsOpen(true)} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+              <IconButton size="small" onClick={() => { setInsightsOpen(true); void loadCommunityMood(); }} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
                 <InsightsIcon sx={{ fontSize: 20 }} />
               </IconButton>
             )}
@@ -760,7 +801,7 @@ function App() {
               disableTouchListener={sidebarVisible}
             >
               <Box
-                onClick={() => setInsightsOpen(true)}
+                onClick={() => { setInsightsOpen(true); void loadCommunityMood(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -957,6 +998,8 @@ function App() {
           onClose={() => setInsightsOpen(false)}
           notes={savedNotes}
           isDarkMode={isDarkMode}
+          communityMood={communityMood}
+          communityMoodLoading={communityMoodLoading}
         />
 
         {/* Authentication dialog used for login and sign-up flows. */}
@@ -1002,6 +1045,16 @@ function App() {
                     }}
                     onSubmit={handleSubmit}
                   />
+                  {currentUser && dailyPrompt && (
+                    <DailyPromptCard
+                      prompt={dailyPrompt}
+                      currentUser={currentUser}
+                      isDarkMode={isDarkMode}
+                      isMobile={isMobile}
+                      onSubmitAnswer={handleSubmitPromptAnswer}
+                      onLoadAnswers={handleLoadPromptAnswers}
+                    />
+                  )}
                 </Grid>
               )}
 

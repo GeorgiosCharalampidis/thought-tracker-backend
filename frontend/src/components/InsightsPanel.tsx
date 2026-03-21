@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { Box, Dialog, DialogContent, IconButton, Typography } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
-import { Cell, Pie, PieChart, Tooltip } from 'recharts';
-import { Note } from '../types';
+import { Bar, BarChart, Cell, Pie, PieChart, Tooltip, XAxis, YAxis } from 'recharts';
+import { CommunityMoodEntry, Note } from '../types';
 import { DOMAIN_GROUPS } from '../utils/categoryColors';
 
 interface InsightsPanelProps {
@@ -10,6 +10,8 @@ interface InsightsPanelProps {
   onClose: () => void;
   notes: Note[];
   isDarkMode: boolean;
+  communityMood: CommunityMoodEntry[];
+  communityMoodLoading: boolean;
 }
 
 const toDateStr = (d: Date) => {
@@ -67,7 +69,7 @@ const CELL_SIZE = 8;
 const CELL_GAP = 2;
 const CELL_STEP = CELL_SIZE + CELL_GAP;
 
-function InsightsPanel({ open, onClose, notes, isDarkMode }: InsightsPanelProps) {
+function InsightsPanel({ open, onClose, notes, isDarkMode, communityMood, communityMoodLoading }: InsightsPanelProps) {
   const domainData = useMemo(() =>
     DOMAIN_GROUPS
       .map(domain => ({
@@ -217,6 +219,52 @@ function InsightsPanel({ open, onClose, notes, isDarkMode }: InsightsPanelProps)
                 <Box key={i} sx={{ width: CELL_SIZE, height: CELL_SIZE, borderRadius: '2px', backgroundColor: c }} />
               ))}
               <Typography sx={{ fontSize: '0.63rem', color: textMuted }}>More</Typography>
+            </Box>
+
+            {/* Community mood */}
+            <Box sx={{ mt: 3, pt: 2.5, borderTop: `1px solid ${borderColor}` }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: textMuted, mb: 1.5 }}>
+                This week in the community
+              </Typography>
+              {communityMoodLoading ? (
+                <Typography sx={{ fontSize: '0.82rem', color: textMuted, textAlign: 'center', py: 1 }}>Loading…</Typography>
+              ) : communityMood.length === 0 ? (
+                <Typography sx={{ fontSize: '0.82rem', color: textMuted, fontStyle: 'italic' }}>No community data yet.</Typography>
+              ) : (
+                <BarChart
+                  width={420}
+                  height={communityMood.length * 28 + 16}
+                  data={communityMood}
+                  layout="vertical"
+                  margin={{ top: 0, right: 48, bottom: 0, left: 0 }}
+                >
+                  <XAxis type="number" hide />
+                  <YAxis
+                    type="category"
+                    dataKey="domainName"
+                    width={120}
+                    tick={{ fontSize: 11, fill: textPrimary }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    formatter={(value, name, props) => [`${props.payload.percentage}% · ${value} entries`, props.payload.domainName]}
+                    contentStyle={{
+                      backgroundColor: isDarkMode ? '#2d2e2d' : '#ffffff',
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 8,
+                      fontSize: '0.75rem',
+                      color: textPrimary,
+                      boxShadow: 'none',
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[0, 3, 3, 0]} barSize={12}>
+                    {communityMood.map((entry) => (
+                      <Cell key={entry.domainName} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              )}
             </Box>
           </>
         )}

@@ -36,6 +36,15 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
     @Query("select distinct n.category from Note n where n.user.id = :userId and n.category is not null")
     List<String> findDistinctCategoriesByUserId(@Param("userId") Long userId);
 
+    // Community mood: count notes by category for past N days
+    @Query(value = """
+            SELECT category, COUNT(*) FROM notes
+            WHERE date >= :since
+              AND category IS NOT NULL
+            GROUP BY category
+            """, nativeQuery = true)
+    List<Object[]> countByCategoryAndDateAfter(@Param("since") LocalDate since);
+
     // Vector similarity queries using pgvector <=> (cosine distance) operator
     // distanceThreshold = 1 - similarityThreshold (cosine distance is inverse of cosine similarity)
 
