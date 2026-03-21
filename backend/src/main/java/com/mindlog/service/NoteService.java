@@ -433,30 +433,6 @@ public class NoteService {
                 .collect(Collectors.toList());
     }
 
-    private List<Note> orderNotesBySimilarityToReference(List<Note> notes, Note referenceNote) {
-        if (notes.size() <= 1 || referenceNote.getEmbedding() == null) {
-            return notes;
-        }
-
-        float[] referenceEmbedding = referenceNote.getEmbedding();
-
-        // Sort by similarity to reference note (most similar first)
-        return notes.stream()
-                .sorted((note1, note2) -> {
-                    float[] emb1 = note1.getEmbedding();
-                    float[] emb2 = note2.getEmbedding();
-                    
-                    if (emb1 == null && emb2 == null) return 0;
-                    if (emb1 == null) return 1; // Notes without embeddings go last
-                    if (emb2 == null) return -1;
-                    
-                    float sim1 = com.mindlog.util.VectorUtils.cosine(emb1, referenceEmbedding);
-                    float sim2 = com.mindlog.util.VectorUtils.cosine(emb2, referenceEmbedding);
-                    return Float.compare(sim2, sim1); // Higher similarity first
-                })
-                .collect(Collectors.toList());
-    }
-
     private boolean isStrongCommunityMatch(Note candidate, Note referenceNote) {
         if (candidate.getEmbedding() == null || referenceNote.getEmbedding() == null) {
             return false;

@@ -28,14 +28,6 @@ public class AiService {
         this.restTemplate = createRestTemplate();
     }
 
-//    private RestTemplate createRestTemplate() {
-//        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-//        factory.setConnectTimeout(config.getTimeout());
-//        factory.setReadTimeout(config.getTimeout());
-//        return new RestTemplate(factory);
-//
-//    }
-
      private RestTemplate createRestTemplate() {
          SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
          factory.setConnectTimeout(config.getTimeout());
