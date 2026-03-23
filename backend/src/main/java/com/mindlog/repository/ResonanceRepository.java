@@ -19,4 +19,8 @@ public interface ResonanceRepository extends JpaRepository<Resonance, Long> {
     @Modifying
     @Query("UPDATE Resonance r SET r.seen = true WHERE r.note.user.id = :userId AND r.seen = false")
     void markAllSeenForNoteOwner(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM Resonance r WHERE r.note.id = :noteId OR r.resonatingNote.id = :noteId")
+    void deleteByNoteId(@Param("noteId") Long noteId);
 }

@@ -382,6 +382,7 @@ public class NoteService {
         return bestSubCategory.label();
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteNoteByIdAndUserId(Long userId, Long noteId) {
         Note note = NoteRepository.findByUser_Id(userId)
                 .stream()
@@ -389,6 +390,7 @@ public class NoteService {
                 .findFirst()
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
 
+        resonanceService.deleteResonancesForNote(noteId);
         NoteRepository.delete(note);
     }
 

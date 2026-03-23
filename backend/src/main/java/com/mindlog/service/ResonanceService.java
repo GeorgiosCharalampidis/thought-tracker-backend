@@ -71,6 +71,11 @@ public class ResonanceService {
     }
 
     @Transactional
+    public void deleteResonancesForNote(Long noteId) {
+        resonanceRepository.deleteByNoteId(noteId);
+    }
+
+    @Transactional
     public void markAllSeenForUser(Long userId) {
         resonanceRepository.markAllSeenForNoteOwner(userId);
     }
