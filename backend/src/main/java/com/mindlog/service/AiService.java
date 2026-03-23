@@ -171,20 +171,11 @@ public class AiService {
         String categoryList = Category.allLabels().stream()
                 .collect(Collectors.joining("\n- ", "- ", ""));
 
-        String systemPrompt = "You are a classifier for a journaling app. " +
-                "Given a journal entry, respond with ONLY a JSON object in this exact format (no markdown, no explanation):\n" +
-                "{\"valid\": true, \"category\": \"Physical Health & Illness\"}\n\n" +
-                "Rules:\n" +
-                "- valid: true if the entry expresses a personal thought, experience, feeling, concern, goal, or observation. " +
-                "false only for gibberish, test messages, greetings with no personal content, or meaningless text.\n" +
-                "- category: the single best-fitting category for the PRIMARY subject or concern of the entry. " +
-                "Read the full entry carefully before deciding. Key distinctions:\n" +
-                "  * 'Pain' used with self-doubt, existential questioning, or emotional context = Depression & Low Mood or Anxiety & Overthinking, NOT Physical Health.\n" +
-                "  * 'Pain' referring to a specific body part, symptom, or medical condition = Physical Health & Illness.\n" +
-                "  * Emotional framing words ('happy', 'sad') at the start may contradict the actual concern — weight the body of the entry more.\n" +
-                "  * Sarcasm or self-questioning ('am I?', 'I guess') signals the surface emotion is not the real one.\n" +
-                "Example: 'Happy :) I want a solution to my dry eyes and low back pain' → Physical Health & Illness.\n" +
-                "Example: 'I'm so happy (am I), I'm in pain, I'm happy in pain' → Depression & Low Mood.\n\n" +
+        String systemPrompt = "You are a classifier for a journaling app.\n" +
+                "Respond with ONLY this JSON (no markdown, no explanation):\n" +
+                "{\"valid\": true, \"category\": \"...\"}\n\n" +
+                "valid: true for any genuine personal expression; false only for gibberish or meaningless text.\n" +
+                "category: the category that best captures what the person is truly experiencing — read the full entry and look past surface words to the emotional or thematic core.\n\n" +
                 "Categories:\n" + categoryList;
 
         String url = config.getUrl() + "/api/chat";
