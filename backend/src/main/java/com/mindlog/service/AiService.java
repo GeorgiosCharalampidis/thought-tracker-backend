@@ -161,22 +161,28 @@ public class AiService {
         }
     }
 
+    public record ClassificationResult(boolean valid, String category) {}
+
     /**
-     * Uses the LLM to classify a journal entry into one of the known categories.
-     * Returns the exact display name of the matched category, or null if classification fails.
+     * Single LLM call that both validates the entry and classifies it into a category.
+     * Returns null if the call fails (callers should fall back to separate validation + embedding categorization).
      */
-    public String categorize(String noteContent) {
+    public ClassificationResult validateAndCategorize(String noteContent) {
         String categoryList = Category.allLabels().stream()
                 .collect(Collectors.joining("\n- ", "- ", ""));
 
-        String systemPrompt = "You are a text classifier for a journaling app. " +
-                "Given a journal entry, return ONLY the name of the single most fitting category from the list below. " +
-                "Consider the full meaning and emotional context of the entry, not just individual words. " +
-                "Return nothing else - no explanation, no punctuation, just the exact category name as written.\n\n" +
+        String systemPrompt = "You are a classifier for a journaling app. " +
+                "Given a journal entry, respond with ONLY a JSON object in this exact format (no markdown, no explanation):\n" +
+                "{\"valid\": true, \"category\": \"Physical Health & Illness\"}\n\n" +
+                "Rules:\n" +
+                "- valid: true if the entry expresses a personal thought, experience, feeling, concern, goal, or observation. " +
+                "false only for gibberish, test messages, greetings with no personal content, or meaningless text.\n" +
+                "- category: the single best-fitting category for the PRIMARY subject or concern of the entry. " +
+                "Look past emotional framing words at the start (like 'happy', 'sad', 'worried') — identify what the entry is actually ABOUT. " +
+                "Example: 'Happy :) I want a solution to my dry eyes and low back pain' is about physical health, not joy.\n\n" +
                 "Categories:\n" + categoryList;
 
         String url = config.getUrl() + "/api/chat";
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -204,22 +210,35 @@ public class AiService {
             }
 
             String raw = fullResponse.toString().trim();
-            // Exact match first
+            // Strip markdown code fences if the model wrapped its response
+            if (raw.startsWith("```")) {
+                raw = raw.replaceAll("^```[a-z]*\\n?", "").replaceAll("```$", "").trim();
+            }
+
+            JsonNode result = objectMapper.readTree(raw);
+            boolean valid = result.path("valid").asBoolean(true);
+            String categoryRaw = result.path("category").asText("").trim();
+
+            // Match to a known category (exact then loose)
+            String matchedCategory = null;
             for (Category c : Category.values()) {
-                if (c.getDisplayName().equalsIgnoreCase(raw)) {
-                    return c.getDisplayName();
+                if (c.getDisplayName().equalsIgnoreCase(categoryRaw)) {
+                    matchedCategory = c.getDisplayName();
+                    break;
                 }
             }
-            // Loose match: LLM may have wrapped it in a sentence
-            for (Category c : Category.values()) {
-                if (raw.toLowerCase().contains(c.getDisplayName().toLowerCase())) {
-                    return c.getDisplayName();
+            if (matchedCategory == null) {
+                for (Category c : Category.values()) {
+                    if (categoryRaw.toLowerCase().contains(c.getDisplayName().toLowerCase())) {
+                        matchedCategory = c.getDisplayName();
+                        break;
+                    }
                 }
             }
-            logger.warn("LLM returned unrecognized category: '{}'", raw);
-            return null;
+
+            return new ClassificationResult(valid, matchedCategory);
         } catch (Exception e) {
-            logger.warn("LLM categorization failed: {}", e.getMessage());
+            logger.warn("validateAndCategorize failed: {}", e.getMessage());
             return null;
         }
     }
