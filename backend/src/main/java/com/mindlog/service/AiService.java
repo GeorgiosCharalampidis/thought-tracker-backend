@@ -183,7 +183,7 @@ public class AiService {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Map<String, Object> payload = Map.of(
-                "model", config.getModel(),
+                "model", config.getClassificationModel(),
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
                         Map.of("role", "user", "content", noteContent)
