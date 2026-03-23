@@ -212,12 +212,13 @@ public class NoteService {
         Long referenceNoteId = referenceNote.getId();
         String embeddingStr = referenceNote.getEmbeddingJson();
 
-        // Own notes: DB-level cosine similarity search via pgvector index
+        // Own notes: search within the same category to avoid cross-category noise
         List<Note> ownNotes = Collections.emptyList();
-        if (currentUserId != null && embeddingStr != null) {
-            float ownDistThreshold = 1.0f - OWN_NOTE_SIMILARITY_THRESHOLD; // 1 - 0.72 = 0.28
-            ownNotes = NoteRepository.findSimilarByUserId(
+        if (currentUserId != null && embeddingStr != null && category != null) {
+            float ownDistThreshold = 1.0f - OWN_NOTE_SIMILARITY_THRESHOLD;
+            ownNotes = NoteRepository.findSimilarByUserIdAndCategory(
                     currentUserId,
+                    category,
                     referenceNoteId != null ? referenceNoteId : -1L,
                     embeddingStr,
                     ownDistThreshold,
