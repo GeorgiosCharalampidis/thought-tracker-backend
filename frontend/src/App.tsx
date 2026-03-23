@@ -615,48 +615,32 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      {/* Mobile top AppBar — replaces the floating buttons on small screens */}
+      {/* Mobile top AppBar — menu toggle left, account actions right */}
       {isMobile && (
-        <AppBar position="fixed" elevation={0} sx={{ backgroundColor: isDarkMode ? (isMobile ? '#000000' : '#202120') : '#f1f5f9', zIndex: 1300, transition: 'background-color 0.22s ease' }}>
+        <AppBar position="fixed" elevation={0} sx={{ backgroundColor: isDarkMode ? '#000000' : '#f1f5f9', zIndex: 1300, transition: 'background-color 0.22s ease' }}>
           <Toolbar variant="dense" sx={{ gap: 0.5, px: 2, py: 2 }}>
             <IconButton edge="start" size="small" onClick={handlePrimaryLeftAction} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
               {isSidebarOpen ? <MenuOpenIcon sx={{ fontSize: 20 }} /> : <MenuIcon sx={{ fontSize: 20 }} />}
             </IconButton>
-            <IconButton size="small" onClick={openChat} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
-              <SparkleIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            {currentUser && (
-              <IconButton size="small" onClick={() => { setInsightsOpen(true); void loadCommunityMood(); }} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
-                <InsightsIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-            )}
-            {currentUser && (
-              <IconButton size="small" onClick={() => { setMyPromptsOpen(true); void loadMyPrompts(); }} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
-                <MyPromptsIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-            )}
-            <IconButton size="small" onClick={() => setIsDarkMode(!isDarkMode)} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
-              {isDarkMode ? <LightModeIcon sx={{ fontSize: 20 }} /> : <DarkModeIcon sx={{ fontSize: 20 }} />}
-            </IconButton>
             <Box sx={{ flexGrow: 1 }} />
-            {currentUser && (
-              <NotificationBell isDarkMode={isDarkMode} isMobile onNoteClick={async (noteId) => {
-                if (!currentUser) return;
-                setLoading(true);
-                try {
-                  const response = await axios.get<SimilarThoughtsResponse>(`/api/notes/${currentUser.id}/similar-to/${noteId}`);
-                  applySimilarThoughtsResponse(response.data, { clearComposer: false });
-                } catch (error) {
-                  console.error('Error loading note from notification:', error);
-                } finally {
-                  setLoading(false);
-                }
-              }} />
-            )}
             {currentUser ? (
-              <IconButton size="small" onClick={handleLogout} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
-                <LogoutIcon sx={{ fontSize: 20 }} />
-              </IconButton>
+              <>
+                <NotificationBell isDarkMode={isDarkMode} onNoteClick={async (noteId) => {
+                  if (!currentUser) return;
+                  setLoading(true);
+                  try {
+                    const response = await axios.get<SimilarThoughtsResponse>(`/api/notes/${currentUser.id}/similar-to/${noteId}`);
+                    applySimilarThoughtsResponse(response.data, { clearComposer: false });
+                  } catch (error) {
+                    console.error('Error loading note from notification:', error);
+                  } finally {
+                    setLoading(false);
+                  }
+                }} />
+                <Button size="small" variant="text" onClick={handleLogout} startIcon={<LogoutIcon sx={{ fontSize: 15 }} />} sx={{ borderRadius: 999, px: 1, py: 0.5, textTransform: 'none', fontSize: '0.82rem', color: isDarkMode ? '#cbd5e1' : '#475569', minWidth: 0, '&:hover': { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)' } }}>
+                  Log out
+                </Button>
+              </>
             ) : (
               <>
                 <Button size="small" variant="text" onClick={() => openAuthPrompt('login', null, 'Log in to save thoughts and unlock AI reflections.')} sx={{ borderRadius: 999, px: 1.2, py: 0.5, textTransform: 'none', fontSize: '0.82rem', color: isDarkMode ? '#111827' : '#ffffff', backgroundColor: isDarkMode ? '#ffffff' : '#111827', border: isDarkMode ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(15,23,42,0.08)', '&:hover': { backgroundColor: isDarkMode ? '#f8fafc' : '#222222' } }}>
@@ -978,6 +962,32 @@ function App() {
           onNoteDeleted={(noteId) => {
             setSavedNotes(prev => prev.filter(n => n.id !== noteId));
           }}
+          mobileNav={isMobile ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              {[
+                { icon: <SparkleIcon sx={{ fontSize: 18 }} />, label: 'Chat', onClick: () => { openChat(); closeSidebar(); } },
+                ...(currentUser ? [
+                  { icon: <InsightsIcon sx={{ fontSize: 18 }} />, label: 'My Insights', onClick: () => { setInsightsOpen(true); void loadCommunityMood(); closeSidebar(); } },
+                  { icon: <MyPromptsIcon sx={{ fontSize: 18 }} />, label: 'My Prompts', onClick: () => { setMyPromptsOpen(true); void loadMyPrompts(); closeSidebar(); } },
+                ] : []),
+                { icon: isDarkMode ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />, label: isDarkMode ? 'Light mode' : 'Dark mode', onClick: () => setIsDarkMode(d => !d) },
+              ].map(({ icon, label, onClick }) => (
+                <Box
+                  key={label}
+                  onClick={onClick}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.5,
+                    px: 0.5, py: 1, borderRadius: 2, cursor: 'pointer',
+                    color: isDarkMode ? '#cbd5e1' : '#475569',
+                    '&:hover': { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.05)' },
+                  }}
+                >
+                  {icon}
+                  <Typography sx={{ fontSize: '0.9rem', lineHeight: 1 }}>{label}</Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : undefined}
         />
 
         {/* Top-right account actions and dark mode toggle. */}

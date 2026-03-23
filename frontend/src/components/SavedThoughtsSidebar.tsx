@@ -23,6 +23,7 @@ interface SavedThoughtsSidebarProps {
   headerHeight: number;
   onNoteUpdated: (noteId: number, newContent: string) => void;
   onNoteDeleted: (noteId: number) => void;
+  mobileNav?: React.ReactNode;
 }
 
 
@@ -78,6 +79,7 @@ function SavedThoughtsSidebar({
   headerHeight,
   onNoteUpdated,
   onNoteDeleted,
+  mobileNav,
 }: SavedThoughtsSidebarProps) {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState('');
@@ -240,6 +242,12 @@ function SavedThoughtsSidebar({
             },
           }}
         >
+          {isMobile && mobileNav && (
+            <Box sx={{ mb: 1.5, borderBottom: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(15,23,42,0.06)', pb: 1.5 }}>
+              {mobileNav}
+            </Box>
+          )}
+
           {!currentUser ? (
             <Box sx={{ px: 1.1, py: 0.2 }}>
               <Typography sx={{ fontSize: '0.86rem', color: isDarkMode ? '#cbd5e1' : '#475569', lineHeight: 1.6 }}>

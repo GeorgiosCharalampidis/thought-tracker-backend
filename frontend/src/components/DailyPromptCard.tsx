@@ -232,7 +232,7 @@ function DailyPromptCard({
                   },
                 }}
               >
-                {answersLoading ? 'Loading…' : othersOpen ? "Hide others' answers" : 'See what others said'}
+                {answersLoading ? 'Loading…' : othersOpen ? "Hide answers" : 'See what others said'}
               </Button>
 
               <Collapse in={othersOpen} sx={{ width: '100%' }}>
