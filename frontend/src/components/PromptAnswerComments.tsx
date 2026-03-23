@@ -86,18 +86,20 @@ function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode 
 
   return (
     <Box mt={1} pt={0.5}>
-      <Box
-        display="flex"
-        alignItems="center"
-        gap={0.5}
-        sx={{ cursor: 'pointer', width: 'fit-content' }}
-        onClick={handleToggle}
-      >
-        <ChatBubbleOutlineIcon sx={{ fontSize: '0.95rem', color: mutedColor }} />
-        <Typography variant="caption" sx={{ color: mutedColor, userSelect: 'none' }}>
-          {count === 0 ? 'Add a comment' : `${count} comment${count === 1 ? '' : 's'}`}
-        </Typography>
-      </Box>
+      {!open && (
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={0.5}
+          sx={{ cursor: 'pointer', width: 'fit-content' }}
+          onClick={() => setOpen(true)}
+        >
+          <ChatBubbleOutlineIcon sx={{ fontSize: '0.95rem', color: mutedColor }} />
+          <Typography variant="caption" sx={{ color: mutedColor, userSelect: 'none' }}>
+            {count === 0 ? 'Add a comment' : `${count} comment${count === 1 ? '' : 's'}`}
+          </Typography>
+        </Box>
+      )}
 
       <Collapse in={open} sx={{ overflow: 'hidden', '&.MuiCollapse-entered': { overflow: 'hidden' } }}>
         <Box mt={1.5}>
@@ -167,6 +169,7 @@ function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode 
                     color: textColor,
                     textOverflow: 'ellipsis',
                     '&::placeholder': { color: mutedColor },
+                    '&:focus::placeholder': { color: 'transparent' },
                   },
                 }}
               />

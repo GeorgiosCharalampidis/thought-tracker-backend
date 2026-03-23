@@ -71,18 +71,14 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
   const [input, setInput] = useState('');
   const [displayTexts, setDisplayTexts] = useState<Record<number, string>>({});
   const [animatingIdx, setAnimatingIdx] = useState<number>(-1);
-  const [dots, setDots] = useState('');
+  const [dots, setDots] = useState('.');
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Animated dots while loading
   useEffect(() => {
-    if (!loading) {
-      setDots('');
-      return;
-    }
+    if (!loading) { setDots('.'); return; }
     const interval = setInterval(() => {
-      setDots((d) => (d.length >= 3 ? '' : d + '.'));
+      setDots((d) => (d.length >= 3 ? '.' : d + '.'));
     }, 380);
     return () => clearInterval(interval);
   }, [loading]);
@@ -200,17 +196,9 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
         >
           {/* Initial loading state */}
           {isEmpty && loading && (
-            <Box display="flex" alignItems="center" gap={1.25} py={0.5}>
-              <Typography
-                sx={{
-                  color: isDarkMode ? '#94a3b8' : '#64748b',
-                  fontStyle: 'italic',
-                  fontSize: '0.93rem',
-                }}
-              >
-                Reflecting on your thoughts{dots}
-              </Typography>
-            </Box>
+            <Typography sx={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontStyle: 'italic', fontSize: '0.93rem' }}>
+              Reflecting on your thoughts{dots}
+            </Typography>
           )}
 
           {messages.map((msg, idx) => {
@@ -249,13 +237,11 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
                   <Box
                     sx={{
                       maxWidth: '78%',
-                      px: 1.75,
-                      py: 1,
-                      borderRadius: '16px 16px 4px 16px',
-                      backgroundColor: isDarkMode ? 'rgba(102,126,234,0.18)' : 'rgba(102,126,234,0.12)',
-                      border: isDarkMode
-                        ? '1px solid rgba(102,126,234,0.25)'
-                        : '1px solid rgba(102,126,234,0.2)',
+                      px: 2,
+                      py: 1.25,
+                      borderRadius: '28px 28px 4px 28px',
+                      backgroundColor: isDarkMode ? '#313130' : '#ffffff',
+                      border: isDarkMode ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(15,23,42,0.08)',
                     }}
                   >
                     <Typography
@@ -278,14 +264,8 @@ function AiChatPanel({ messages, loading, isDarkMode, onSendMessage }: AiChatPan
           {/* Follow-up loading indicator */}
           {loading && !isEmpty && (
             <Fade in timeout={300}>
-              <Typography
-                sx={{
-                  color: isDarkMode ? '#94a3b8' : '#64748b',
-                  fontStyle: 'italic',
-                  fontSize: '0.87rem',
-                }}
-              >
-                {dots || '.'}
+              <Typography sx={{ color: isDarkMode ? '#94a3b8' : '#64748b', fontStyle: 'italic', fontSize: '0.87rem' }}>
+                {dots}
               </Typography>
             </Fade>
           )}
