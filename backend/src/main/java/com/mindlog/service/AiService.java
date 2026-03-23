@@ -14,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mindlog.dto.ChatMessage;
+import com.mindlog.model.Category;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AiService {
@@ -156,6 +158,69 @@ public class AiService {
         } catch (Exception e) {
             logger.error("Error during chat with AI service: {}", e.getMessage());
             throw new RuntimeException("Error communicating with AI service", e);
+        }
+    }
+
+    /**
+     * Uses the LLM to classify a journal entry into one of the known categories.
+     * Returns the exact display name of the matched category, or null if classification fails.
+     */
+    public String categorize(String noteContent) {
+        String categoryList = Category.allLabels().stream()
+                .collect(Collectors.joining("\n- ", "- ", ""));
+
+        String systemPrompt = "You are a text classifier for a journaling app. " +
+                "Given a journal entry, return ONLY the name of the single most fitting category from the list below. " +
+                "Consider the full meaning and emotional context of the entry, not just individual words. " +
+                "Return nothing else - no explanation, no punctuation, just the exact category name as written.\n\n" +
+                "Categories:\n" + categoryList;
+
+        String url = config.getUrl() + "/api/chat";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, Object> payload = Map.of(
+                "model", config.getModel(),
+                "messages", List.of(
+                        Map.of("role", "system", "content", systemPrompt),
+                        Map.of("role", "user", "content", noteContent)
+                )
+        );
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) return null;
+
+            StringBuilder fullResponse = new StringBuilder();
+            for (String jsonChunk : response.getBody().split("\n")) {
+                if (jsonChunk.trim().isEmpty()) continue;
+                JsonNode jsonNode = objectMapper.readTree(jsonChunk);
+                if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
+                    fullResponse.append(jsonNode.get("message").get("content").asText());
+                }
+            }
+
+            String raw = fullResponse.toString().trim();
+            // Exact match first
+            for (Category c : Category.values()) {
+                if (c.getDisplayName().equalsIgnoreCase(raw)) {
+                    return c.getDisplayName();
+                }
+            }
+            // Loose match: LLM may have wrapped it in a sentence
+            for (Category c : Category.values()) {
+                if (raw.toLowerCase().contains(c.getDisplayName().toLowerCase())) {
+                    return c.getDisplayName();
+                }
+            }
+            logger.warn("LLM returned unrecognized category: '{}'", raw);
+            return null;
+        } catch (Exception e) {
+            logger.warn("LLM categorization failed: {}", e.getMessage());
+            return null;
         }
     }
 

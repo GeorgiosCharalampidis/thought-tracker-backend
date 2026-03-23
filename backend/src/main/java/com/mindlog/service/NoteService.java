@@ -304,27 +304,43 @@ public class NoteService {
     }
 
     private void autoClusterUserNotes(List<Note> notes) {
-        List<String> themes = Category.allLabels();
-        List<String> themeDescriptions = Category.allDescriptions();
-        List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
-
         List<String> noteTexts = notes.stream().map(Note::getContent).collect(Collectors.toList());
         List<float[]> noteEmbeddings = embeddingService.embedAll(noteTexts);
+
+        // Lazily computed — only needed if LLM categorization fails for any note
+        List<float[]> themeEmbeddings = null;
 
         for (int i = 0; i < notes.size(); i++) {
             Note note = notes.get(i);
             float[] noteEmbedding = noteEmbeddings.get(i);
-
             note.setEmbedding(noteEmbedding);
 
-            ScoredMatch bestThemeMatch = findBestMatchingTheme(noteEmbedding, themes, themeEmbeddings);
-            String bestTheme = bestThemeMatch.isConfident(CATEGORY_CONFIDENCE_THRESHOLD, CATEGORY_CONFIDENCE_MARGIN)
-                    ? bestThemeMatch.label()
-                    : Category.OPEN_REFLECTIONS.getDisplayName();
-            note.setCategory(bestTheme);
+            // Try LLM categorization first for accurate context-aware classification
+            String bestTheme = null;
+            try {
+                bestTheme = aiService.categorize(note.getContent());
+                if (bestTheme != null) {
+                    logger.info("LLM categorized '{}...' as '{}'",
+                            note.getContent().substring(0, Math.min(50, note.getContent().length())), bestTheme);
+                }
+            } catch (Exception e) {
+                logger.warn("LLM categorization threw unexpectedly: {}", e.getMessage());
+            }
 
-            String bestSubCategory = findBestSubCategory(bestTheme, noteEmbedding);
-            note.setSubCategory(bestSubCategory);
+            // Fall back to embedding-based categorization if LLM failed
+            if (bestTheme == null) {
+                logger.info("Falling back to embedding-based categorization for note");
+                if (themeEmbeddings == null) {
+                    themeEmbeddings = embeddingService.embedAll(Category.allDescriptions());
+                }
+                ScoredMatch bestThemeMatch = findBestMatchingTheme(noteEmbedding, Category.allLabels(), themeEmbeddings);
+                bestTheme = bestThemeMatch.isConfident(CATEGORY_CONFIDENCE_THRESHOLD, CATEGORY_CONFIDENCE_MARGIN)
+                        ? bestThemeMatch.label()
+                        : Category.OPEN_REFLECTIONS.getDisplayName();
+            }
+
+            note.setCategory(bestTheme);
+            note.setSubCategory(findBestSubCategory(bestTheme, noteEmbedding));
         }
     }
 
