@@ -1,5 +1,6 @@
 package com.mindlog.controller;
 
+import com.mindlog.dto.AnsweredPromptSummary;
 import com.mindlog.dto.DailyPromptDto;
 import com.mindlog.dto.PromptAnswerDto;
 import com.mindlog.model.User;
@@ -47,5 +48,25 @@ public class DailyPromptController {
             Authentication authentication) {
         User user = userService.getAuthenticatedUser(authentication);
         return ResponseEntity.ok(dailyPromptService.getAnswersForPrompt(promptIndex, user.getId()));
+    }
+
+    @PostMapping("/{promptIndex}/save")
+    public ResponseEntity<Void> savePrompt(@PathVariable int promptIndex, Authentication authentication) {
+        User user = userService.getAuthenticatedUser(authentication);
+        dailyPromptService.savePrompt(user.getId(), promptIndex);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{promptIndex}/save")
+    public ResponseEntity<Void> unsavePrompt(@PathVariable int promptIndex, Authentication authentication) {
+        User user = userService.getAuthenticatedUser(authentication);
+        dailyPromptService.unsavePrompt(user.getId(), promptIndex);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/my-answers")
+    public ResponseEntity<List<AnsweredPromptSummary>> getMyAnswers(Authentication authentication) {
+        User user = userService.getAuthenticatedUser(authentication);
+        return ResponseEntity.ok(dailyPromptService.getMyAnsweredPrompts(user.getId()));
     }
 }

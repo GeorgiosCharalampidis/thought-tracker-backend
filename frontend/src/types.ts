@@ -64,6 +64,7 @@ export interface DailyPrompt {
   promptIndex: number;
   question: string;
   userAnswerText?: string;
+  saved: boolean;
 }
 
 export interface PromptAnswerResponse {
@@ -71,6 +72,13 @@ export interface PromptAnswerResponse {
   answerText: string;
   commentCount: number;
   username: string;
+}
+
+export interface AnsweredPromptSummary {
+  promptIndex: number;
+  question: string;
+  myAnswer: string;
+  allAnswers: PromptAnswerResponse[];
 }
 
 export interface CommunityMoodEntry {

@@ -1,5 +1,6 @@
 package com.mindlog.service;
 
+import com.mindlog.dto.AnsweredPromptSummary;
 import com.mindlog.dto.DailyPromptDto;
 import com.mindlog.dto.PromptAnswerDto;
 import com.mindlog.exception.BadCredentialsException;
@@ -102,7 +103,22 @@ public class DailyPromptService {
         String question = PROMPTS.get(index);
         Optional<PromptAnswer> existing = promptAnswerRepository.findByUserIdAndPromptIndex(userId, index);
         String userAnswerText = existing.map(PromptAnswer::getAnswerText).orElse(null);
-        return new DailyPromptDto(index, question, userAnswerText);
+        boolean saved = existing.map(PromptAnswer::isSaved).orElse(false);
+        return new DailyPromptDto(index, question, userAnswerText, saved);
+    }
+
+    public void savePrompt(Long userId, int promptIndex) {
+        promptAnswerRepository.findByUserIdAndPromptIndex(userId, promptIndex).ifPresent(a -> {
+            a.setSaved(true);
+            promptAnswerRepository.save(a);
+        });
+    }
+
+    public void unsavePrompt(Long userId, int promptIndex) {
+        promptAnswerRepository.findByUserIdAndPromptIndex(userId, promptIndex).ifPresent(a -> {
+            a.setSaved(false);
+            promptAnswerRepository.save(a);
+        });
     }
 
     public PromptAnswerDto submitAnswer(Long userId, int promptIndex, String answerText) {
@@ -141,6 +157,34 @@ public class DailyPromptService {
                             promptAnswerCommentRepository.countByAnswerId(a.getId()),
                             username
                     );
+                })
+                .toList();
+    }
+
+    public List<AnsweredPromptSummary> getMyAnsweredPrompts(Long userId) {
+        List<PromptAnswer> myAnswers = promptAnswerRepository.findByUserId(userId);
+        return myAnswers.stream()
+                .filter(PromptAnswer::isSaved)
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(myAnswer -> {
+                    int index = myAnswer.getPromptIndex();
+                    String question = PROMPTS.get(index);
+                    List<PromptAnswerDto> allAnswers = promptAnswerRepository.findByPromptIndex(index).stream()
+                            .filter(a -> !a.getUserId().equals(userId))
+                            .map(a -> {
+                                String username = userRepository.findById(a.getUserId())
+                                        .map(u -> u.getUsername())
+                                        .orElse("anonymous");
+                                return new PromptAnswerDto(
+                                        a.getId(),
+                                        a.getAnswerText(),
+                                        a.getCreatedAt(),
+                                        promptAnswerCommentRepository.countByAnswerId(a.getId()),
+                                        username
+                                );
+                            })
+                            .toList();
+                    return new AnsweredPromptSummary(index, question, myAnswer.getAnswerText(), allAnswers);
                 })
                 .toList();
     }

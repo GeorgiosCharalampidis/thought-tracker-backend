@@ -55,6 +55,13 @@ public class NoteController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{userId}/quick-save")
+    public ResponseEntity<Void> quickSaveNote(@PathVariable Long userId, @RequestBody java.util.Map<String, String> body, Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
+        NoteService.quickSaveNote(userId, body.get("content"));
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{userId}/batch")
     public ResponseEntity<List<Note>> createNotesForUser(@PathVariable Long userId, @RequestBody List<Note> notes, Authentication authentication) {
         userService.requireAuthorizedUser(userId, authentication);

@@ -13,4 +13,6 @@ public interface PromptAnswerRepository extends JpaRepository<PromptAnswer, Long
     Optional<PromptAnswer> findByUserIdAndPromptIndex(Long userId, int promptIndex);
 
     List<PromptAnswer> findByPromptIndex(int promptIndex);
+
+    List<PromptAnswer> findByUserId(Long userId);
 }

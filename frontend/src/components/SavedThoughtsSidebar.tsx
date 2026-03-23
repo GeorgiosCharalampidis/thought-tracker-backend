@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, CircularProgress, IconButton, Paper, TextField, Tooltip, Typography } from '@mui/material';
-import { Edit as EditIcon, MenuOpen as MenuOpenIcon } from '@mui/icons-material';
+import { DeleteOutline as DeleteIcon, Edit as EditIcon, MenuOpen as MenuOpenIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { AuthUser, Note } from '../types';
 import { getCategoryColor } from '../utils/categoryColors';
@@ -22,6 +22,7 @@ interface SavedThoughtsSidebarProps {
   formatHistoryDate: (value: string) => string;
   headerHeight: number;
   onNoteUpdated: (noteId: number, newContent: string) => void;
+  onNoteDeleted: (noteId: number) => void;
 }
 
 
@@ -76,11 +77,13 @@ function SavedThoughtsSidebar({
   onTransitionEnd,
   headerHeight,
   onNoteUpdated,
+  onNoteDeleted,
 }: SavedThoughtsSidebarProps) {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
+  const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
 
   const todayStr = toLocalDateStr(new Date());
 
@@ -94,6 +97,19 @@ function SavedThoughtsSidebar({
     setEditingNoteId(null);
     setEditDraft('');
     setEditError('');
+  };
+
+  const deleteNote = async (note: Note) => {
+    if (!currentUser || deletingNoteId) return;
+    setDeletingNoteId(note.id);
+    try {
+      await axios.delete(`/api/notes/${currentUser.id}/${note.id}`);
+      onNoteDeleted(note.id);
+    } catch {
+      // silently ignore
+    } finally {
+      setDeletingNoteId(null);
+    }
   };
 
   const saveEdit = async (note: Note) => {
@@ -346,15 +362,29 @@ function SavedThoughtsSidebar({
                                 {savedNote.category}
                               </Typography>
                               {isToday && (
-                                <Tooltip title="Edit" placement="top">
-                                  <IconButton
-                                    size="small"
-                                    onClick={e => { e.stopPropagation(); startEditing(savedNote); }}
-                                    sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#667eea' } }}
-                                  >
-                                    <EditIcon sx={{ fontSize: '0.85rem' }} />
-                                  </IconButton>
-                                </Tooltip>
+                                <Box display="flex" alignItems="center">
+                                  <Tooltip title="Edit" placement="top">
+                                    <IconButton
+                                      size="small"
+                                      onClick={e => { e.stopPropagation(); startEditing(savedNote); }}
+                                      sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#667eea' } }}
+                                    >
+                                      <EditIcon sx={{ fontSize: '0.85rem' }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Delete" placement="top">
+                                    <IconButton
+                                      size="small"
+                                      onClick={e => { e.stopPropagation(); void deleteNote(savedNote); }}
+                                      disabled={deletingNoteId === savedNote.id}
+                                      sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#ef4444' }, '&:disabled': { color: mutedColor } }}
+                                    >
+                                      {deletingNoteId === savedNote.id
+                                        ? <CircularProgress size={10} sx={{ color: mutedColor }} />
+                                        : <DeleteIcon sx={{ fontSize: '0.85rem' }} />}
+                                    </IconButton>
+                                  </Tooltip>
+                                </Box>
                               )}
                             </Box>
                             <Typography

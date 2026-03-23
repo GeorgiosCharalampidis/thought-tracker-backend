@@ -26,6 +26,9 @@ public class PromptAnswer {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "saved")
+    private Boolean saved;
+
     @PrePersist
     private void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -45,4 +48,6 @@ public class PromptAnswer {
     public int getPromptIndex() { return promptIndex; }
     public String getAnswerText() { return answerText; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public boolean isSaved() { return saved != null && saved; }
+    public void setSaved(boolean saved) { this.saved = saved; }
 }

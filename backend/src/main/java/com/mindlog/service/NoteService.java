@@ -158,6 +158,11 @@ public class NoteService {
         return NoteRepository.save(existingNote);
     }
 
+    public void quickSaveNote(Long userId, String content) {
+        userService.getUserById(userId);
+        NoteRepository.quickInsert(userId, content, LocalDate.now());
+    }
+
     public List<Note> getNotesByUserId(Long userId) {
         return NoteRepository.findByUser_Id(userId);
     }

@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Box, Button, Card, CardContent, CircularProgress, Collapse, Fade, Typography } from '@mui/material';
-import { ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
-import { AuthUser, DailyPrompt, PromptAnswerResponse } from '../types';
+import { Box, Button, Card, CardContent, CircularProgress, Collapse, Fade, IconButton, Tooltip, Typography } from '@mui/material';
+import { Bookmark as BookmarkFilledIcon, BookmarkBorder as BookmarkIcon, ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
+import axios from 'axios';
+import { DailyPrompt, AuthUser, PromptAnswerResponse } from '../types';
 import PromptAnswerComments from './PromptAnswerComments';
 
 interface DailyPromptCardProps {
@@ -27,6 +28,8 @@ function DailyPromptCard({
   const [othersOpen, setOthersOpen] = useState(false);
   const [otherAnswers, setOtherAnswers] = useState<PromptAnswerResponse[]>([]);
   const [answersLoading, setAnswersLoading] = useState(false);
+  const [promptSaved, setPromptSaved] = useState(!!prompt.saved);
+  const [promptSaving, setPromptSaving] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const textMuted = isDarkMode ? '#64748b' : '#94a3b8';
@@ -72,16 +75,52 @@ function DailyPromptCard({
     if (!inputOpen) setTimeout(() => textareaRef.current?.focus(), 150);
   };
 
+  const handleToggleSave = async () => {
+    if (promptSaving) return;
+    setPromptSaving(true);
+    try {
+      if (promptSaved) {
+        await axios.delete(`/api/daily-prompt/${prompt.promptIndex}/save`);
+        setPromptSaved(false);
+      } else {
+        await axios.post(`/api/daily-prompt/${prompt.promptIndex}/save`);
+        setPromptSaved(true);
+      }
+    } catch (err) {
+      console.error('Failed to toggle prompt save:', err);
+    } finally {
+      setPromptSaving(false);
+    }
+  };
+
   return (
     <Fade in timeout={600}>
       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
         <Box sx={{ width: '100%', maxWidth: '800px', mb: 4 }}>
 
-          {/* Label */}
-          <Box display="flex" justifyContent="center" mb={1}>
+          {/* Label + bookmark (bookmark is absolute so the label stays centered) */}
+          <Box sx={{ position: 'relative', display: 'flex', justifyContent: 'center', mb: 1 }}>
             <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#667eea', opacity: 0.75 }}>
               Today's prompt
             </Typography>
+            {answered && (
+              <Box sx={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
+                <Tooltip title={promptSaved ? 'Remove from My Prompts' : 'Save to My Prompts'} placement="top">
+                  <IconButton
+                    size="small"
+                    onClick={() => void handleToggleSave()}
+                    disabled={promptSaving}
+                    sx={{ p: 0.15, color: promptSaved ? '#f59e0b' : textMuted, '&:disabled': { color: promptSaved ? '#f59e0b' : textMuted } }}
+                  >
+                    {promptSaving
+                      ? <CircularProgress size={13} sx={{ color: textMuted }} />
+                      : promptSaved
+                        ? <BookmarkFilledIcon sx={{ fontSize: '1rem' }} />
+                        : <BookmarkIcon sx={{ fontSize: '1rem' }} />}
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
           </Box>
 
           {/* Question */}

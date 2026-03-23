@@ -18,6 +18,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import {
   AutoAwesome as SparkleIcon,
   BarChart as InsightsIcon,
+  Bookmark as MyPromptsIcon,
   DarkMode as DarkModeIcon,
   LightMode as LightModeIcon,
   Logout as LogoutIcon,
@@ -30,11 +31,13 @@ import AiChatPanel from './components/AiChatPanel';
 import AuthDialog from './components/AuthDialog';
 import DailyPromptCard from './components/DailyPromptCard';
 import InsightsPanel from './components/InsightsPanel';
+import MyPromptsPanel from './components/MyPromptsPanel';
 import NotificationBell from './components/NotificationBell';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
 import SimilarThoughtsSection from './components/SimilarThoughtsSection';
 import ThoughtComposer from './components/ThoughtComposer';
 import {
+  AnsweredPromptSummary,
   AuthMode,
   AuthResponse,
   AuthUser,
@@ -127,6 +130,9 @@ function App() {
   const [chatLoading, setChatLoading] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [myPromptsOpen, setMyPromptsOpen] = useState(false);
+  const [myPrompts, setMyPrompts] = useState<AnsweredPromptSummary[]>([]);
+  const [myPromptsLoading, setMyPromptsLoading] = useState(false);
   const [streakVisible, setStreakVisible] = useState(false);
   const streakShownRef = useRef(false);
   const chatAbortRef = useRef<AbortController | null>(null);
@@ -164,8 +170,8 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Rail has: menu, chat, insights (logged-in only), dark mode — each 40px with 8px gaps, starting at top 18px
-  const railButtonCount = currentUser ? 4 : 3;
+  // Rail has: menu, chat, insights (logged-in only), my prompts (logged-in only), dark mode — each 40px with 8px gaps, starting at top 18px
+  const railButtonCount = currentUser ? 5 : 3;
   const sidebarHeaderHeight = 18 + railButtonCount * 40 + (railButtonCount - 1) * 8 + 20;
 
   const openAuthPrompt = (mode: AuthMode, action: PendingAction, message: string) => {
@@ -275,6 +281,18 @@ function App() {
     if (!dailyPrompt) return [];
     const response = await axios.get<PromptAnswerResponse[]>(`/api/daily-prompt/${dailyPrompt.promptIndex}/answers`);
     return response.data;
+  };
+
+  const loadMyPrompts = async () => {
+    setMyPromptsLoading(true);
+    try {
+      const res = await axios.get<AnsweredPromptSummary[]>('/api/daily-prompt/my-answers');
+      setMyPrompts(res.data);
+    } catch (err) {
+      console.error('Error loading my prompts:', err);
+    } finally {
+      setMyPromptsLoading(false);
+    }
   };
 
   const loadCommunityMood = async () => {
@@ -612,6 +630,11 @@ function App() {
                 <InsightsIcon sx={{ fontSize: 20 }} />
               </IconButton>
             )}
+            {currentUser && (
+              <IconButton size="small" onClick={() => { setMyPromptsOpen(true); void loadMyPrompts(); }} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
+                <MyPromptsIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            )}
             <IconButton size="small" onClick={() => setIsDarkMode(!isDarkMode)} sx={{ color: isDarkMode ? '#cbd5e1' : '#475569' }}>
               {isDarkMode ? <LightModeIcon sx={{ fontSize: 20 }} /> : <DarkModeIcon sx={{ fontSize: 20 }} />}
             </IconButton>
@@ -853,6 +876,65 @@ function App() {
             </Tooltip>
           )}
 
+          {currentUser && (
+            <Tooltip
+              title="My Prompts"
+              placement="right"
+              disableHoverListener={sidebarVisible}
+              disableFocusListener={sidebarVisible}
+              disableTouchListener={sidebarVisible}
+            >
+              <Box
+                onClick={() => { setMyPromptsOpen(true); void loadMyPrompts(); }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  width: 'fit-content',
+                  height: 40,
+                  pointerEvents: 'auto',
+                  pl: 0,
+                  pr: isSidebarOpen ? 0.9 : 0,
+                  py: 0,
+                  borderRadius: 999,
+                  cursor: 'pointer',
+                  opacity: isSidebarClosing ? 0.72 : 1,
+                  transition: 'background-color 0.2s ease, opacity 0.14s ease',
+                  backgroundColor: 'transparent',
+                  '&:hover': {
+                    backgroundColor: isSidebarOpen
+                      ? (isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)')
+                      : 'transparent',
+                  },
+                  '&:hover .myprompts-icon-btn': {
+                    backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                    borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
+                  },
+                }}
+              >
+                <IconButton
+                  className="myprompts-icon-btn"
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    pointerEvents: 'none',
+                    color: isDarkMode ? '#cbd5e1' : '#475569',
+                    backgroundColor: 'transparent',
+                    border: '1px solid transparent',
+                    transition: 'background-color 0.2s ease, border-color 0.2s ease',
+                  }}
+                >
+                  <MyPromptsIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+                {isSidebarOpen && (
+                  <Typography sx={{ pr: 0.15, fontSize: '0.86rem', color: isDarkMode ? '#cbd5e1' : '#475569', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                    My Prompts
+                  </Typography>
+                )}
+              </Box>
+            </Tooltip>
+          )}
+
           <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'} placement="right">
             <IconButton
               onClick={() => setIsDarkMode(!isDarkMode)}
@@ -892,6 +974,9 @@ function App() {
           headerHeight={sidebarHeaderHeight}
           onNoteUpdated={(noteId, newContent) => {
             setSavedNotes(prev => prev.map(n => n.id === noteId ? { ...n, content: newContent } : n));
+          }}
+          onNoteDeleted={(noteId) => {
+            setSavedNotes(prev => prev.filter(n => n.id !== noteId));
           }}
         />
 
@@ -1003,6 +1088,17 @@ function App() {
           communityMood={communityMood}
           communityMoodLoading={communityMoodLoading}
         />
+
+        {currentUser && (
+          <MyPromptsPanel
+            open={myPromptsOpen}
+            onClose={() => setMyPromptsOpen(false)}
+            prompts={myPrompts}
+            loading={myPromptsLoading}
+            currentUser={currentUser}
+            isDarkMode={isDarkMode}
+          />
+        )}
 
         {/* Authentication dialog used for login and sign-up flows. */}
         <AuthDialog
