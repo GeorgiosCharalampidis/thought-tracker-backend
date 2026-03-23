@@ -14,7 +14,7 @@ public class AiServiceConfig {
     // Getters and Setters
     private String url = "http://localhost:11434";
     private String model = "qwen2.5:7b";
-    private String classificationModel = "qwen2.5:1.5b";
+    private String classificationModel = "qwen2.5:7b";
     private int timeout = 30000;
     private String tone = "direct";
 
