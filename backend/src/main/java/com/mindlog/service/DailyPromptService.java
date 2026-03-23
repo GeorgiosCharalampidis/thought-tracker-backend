@@ -4,7 +4,9 @@ import com.mindlog.dto.DailyPromptDto;
 import com.mindlog.dto.PromptAnswerDto;
 import com.mindlog.exception.BadCredentialsException;
 import com.mindlog.model.PromptAnswer;
+import com.mindlog.repository.PromptAnswerCommentRepository;
 import com.mindlog.repository.PromptAnswerRepository;
+import com.mindlog.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -79,9 +81,15 @@ public class DailyPromptService {
     );
 
     private final PromptAnswerRepository promptAnswerRepository;
+    private final PromptAnswerCommentRepository promptAnswerCommentRepository;
+    private final UserRepository userRepository;
 
-    public DailyPromptService(PromptAnswerRepository promptAnswerRepository) {
+    public DailyPromptService(PromptAnswerRepository promptAnswerRepository,
+                              PromptAnswerCommentRepository promptAnswerCommentRepository,
+                              UserRepository userRepository) {
         this.promptAnswerRepository = promptAnswerRepository;
+        this.promptAnswerCommentRepository = promptAnswerCommentRepository;
+        this.userRepository = userRepository;
     }
 
     public int getTodaysPromptIndex() {
@@ -122,7 +130,18 @@ public class DailyPromptService {
     public List<PromptAnswerDto> getAnswersForPrompt(int promptIndex, Long excludeUserId) {
         return promptAnswerRepository.findByPromptIndex(promptIndex).stream()
                 .filter(a -> !a.getUserId().equals(excludeUserId))
-                .map(PromptAnswerDto::from)
+                .map(a -> {
+                    String username = userRepository.findById(a.getUserId())
+                            .map(u -> u.getUsername())
+                            .orElse("anonymous");
+                    return new PromptAnswerDto(
+                            a.getId(),
+                            a.getAnswerText(),
+                            a.getCreatedAt(),
+                            promptAnswerCommentRepository.countByAnswerId(a.getId()),
+                            username
+                    );
+                })
                 .toList();
     }
 }

@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Box, Button, CircularProgress, Collapse, Fade, Typography } from '@mui/material';
-import { ExpandMore as ChevronIcon } from '@mui/icons-material';
-import { AuthUser, DailyPrompt } from '../types';
+import { Box, Button, Card, CardContent, CircularProgress, Collapse, Fade, Typography } from '@mui/material';
+import { ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
+import { AuthUser, DailyPrompt, PromptAnswerResponse } from '../types';
+import PromptAnswerComments from './PromptAnswerComments';
 
 interface DailyPromptCardProps {
   prompt: DailyPrompt;
@@ -9,11 +10,12 @@ interface DailyPromptCardProps {
   isDarkMode: boolean;
   isMobile: boolean;
   onSubmitAnswer: (answerText: string) => Promise<void>;
-  onLoadAnswers: () => Promise<string[]>;
+  onLoadAnswers: () => Promise<PromptAnswerResponse[]>;
 }
 
 function DailyPromptCard({
   prompt,
+  currentUser,
   isDarkMode,
   onSubmitAnswer,
   onLoadAnswers,
@@ -23,12 +25,21 @@ function DailyPromptCard({
   const [answerInput, setAnswerInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [othersOpen, setOthersOpen] = useState(false);
-  const [otherAnswers, setOtherAnswers] = useState<string[]>([]);
+  const [otherAnswers, setOtherAnswers] = useState<PromptAnswerResponse[]>([]);
   const [answersLoading, setAnswersLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const textMuted = isDarkMode ? '#64748b' : '#94a3b8';
   const textPrimary = isDarkMode ? '#f1f5f9' : '#1e293b';
+  const cardBg = isDarkMode ? '#252626' : '#fafafa';
+  const cardBorder = isDarkMode ? '1px solid #333434' : '1px solid #e8ecf0';
+
+  const cardMaxWidth = (text: string) => {
+    if (text.length < 60) return '220px';
+    if (text.length < 130) return '290px';
+    if (text.length < 230) return '360px';
+    return '440px';
+  };
 
   const handleSubmit = async () => {
     if (!answerInput.trim() || submitting) return;
@@ -155,7 +166,7 @@ function DailyPromptCard({
             </Collapse>
           )}
 
-          {/* Answered: plain answer text + others toggle */}
+          {/* Answered: show user's answer + toggle others */}
           {answered && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
               <Typography sx={{ fontSize: '0.95rem', color: textMuted, textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
@@ -167,23 +178,77 @@ function DailyPromptCard({
                 variant="text"
                 onClick={handleToggleOthers}
                 disabled={answersLoading}
-                sx={{ textTransform: 'none', fontSize: '0.75rem', color: textMuted, p: 0, minWidth: 0, opacity: 0.7, '&:hover': { color: textPrimary, backgroundColor: 'transparent', opacity: 1 } }}
+                startIcon={<PeopleIcon sx={{ fontSize: '0.95rem !important' }} />}
+                endIcon={<ChevronIcon sx={{ fontSize: '1rem !important', transform: othersOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />}
+                sx={{
+                  textTransform: 'none',
+                  fontSize: '0.88rem',
+                  borderRadius: 999,
+                  px: 1.5,
+                  py: 0.4,
+                  color: isDarkMode ? '#cbd5e1' : '#475569',
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                    color: isDarkMode ? '#f1f5f9' : '#1e293b',
+                  },
+                }}
               >
                 {answersLoading ? 'Loading…' : othersOpen ? "Hide others' answers" : 'See what others said'}
               </Button>
 
               <Collapse in={othersOpen} sx={{ width: '100%' }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 0.5 }}>
+                <Box sx={{ mt: 1 }}>
                   {otherAnswers.length === 0 ? (
                     <Typography sx={{ fontSize: '0.82rem', color: textMuted, fontStyle: 'italic', textAlign: 'center' }}>
                       No other answers yet.
                     </Typography>
                   ) : (
-                    otherAnswers.map((answer, i) => (
-                      <Typography key={i} sx={{ fontSize: '0.88rem', color: textMuted, textAlign: 'center', lineHeight: 1.55, opacity: 0.75 }}>
-                        {answer}
-                      </Typography>
-                    ))
+                    <Box display="flex" flexWrap="wrap" gap={2} justifyContent="center" alignItems="flex-start">
+                      {otherAnswers.map((answer, i) => (
+                        <Fade in timeout={400 + i * 150} key={answer.id}>
+                          <Card
+                            elevation={0}
+                            sx={{
+                              width: cardMaxWidth(answer.answerText),
+                              borderRadius: 2.5,
+                              backgroundColor: cardBg,
+                              border: cardBorder,
+                              cursor: 'default',
+                              userSelect: 'text',
+                              transition: 'border-color 0.15s ease',
+                              '&:hover': {
+                                borderColor: isDarkMode ? '#4a4b4a' : '#c8d0da',
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                              {answer.username && (
+                                <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: isDarkMode ? '#a5b4fc' : '#4f46e5', mb: 0.75, opacity: 0.85 }}>
+                                  {answer.username}
+                                </Typography>
+                              )}
+                              <Typography
+                                sx={{
+                                  fontSize: '0.9rem',
+                                  color: isDarkMode ? '#cbd5e1' : '#374151',
+                                  lineHeight: 1.65,
+                                  fontStyle: 'italic',
+                                  opacity: 0.9,
+                                }}
+                              >
+                                {answer.answerText}
+                              </Typography>
+                              <PromptAnswerComments
+                                answerId={answer.id}
+                                initialCount={answer.commentCount}
+                                currentUser={currentUser}
+                                isDarkMode={isDarkMode}
+                              />
+                            </CardContent>
+                          </Card>
+                        </Fade>
+                      ))}
+                    </Box>
                   )}
                 </Box>
               </Collapse>

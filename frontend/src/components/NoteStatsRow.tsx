@@ -85,8 +85,8 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
     }
   }, [noteId, userId, resonancesLoaded]);
 
-  useEffect(() => { loadComments(); }, [loadComments]);
-  useEffect(() => { loadResonances(); }, [loadResonances]);
+  useEffect(() => { if (commentsOpen) loadComments(); }, [commentsOpen, loadComments]);
+  useEffect(() => { if (resonancesOpen) loadResonances(); }, [resonancesOpen, loadResonances]);
 
   const handleSubmitComment = async () => {
     const text = draftText.trim();
@@ -131,11 +131,16 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
         <Box
           display="flex" alignItems="center" gap={0.4}
           onClick={() => setCommentsOpen(o => !o)}
-          sx={{ cursor: 'pointer' }}
+          sx={{
+            cursor: 'pointer',
+            color: commentsOpen ? commentActiveColor : mutedColor,
+            '&:hover': { color: commentsOpen ? commentActiveColor : mutedColor },
+            '& svg': { transition: 'none' },
+          }}
         >
-          <ChatBubbleOutlineIcon sx={{ fontSize: '0.85rem', color: commentsOpen ? commentActiveColor : mutedColor }} />
-          <Typography variant="caption" sx={{ color: commentsOpen ? commentActiveColor : mutedColor, lineHeight: 1, userSelect: 'none' }}>
-            {count > 0 ? `${count} comments` : 'comments'}
+          <ChatBubbleOutlineIcon sx={{ fontSize: '0.85rem', color: 'inherit' }} />
+          <Typography variant="caption" sx={{ color: 'inherit', lineHeight: 1, userSelect: 'none' }}>
+            {count > 0 ? `${count} comment${count === 1 ? '' : 's'}` : 'Add a comment'}
           </Typography>
         </Box>
 
@@ -194,7 +199,7 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     fontSize: '0.82rem', backgroundColor: inputBg,
-                    '& fieldset': { borderColor }, '&:hover fieldset': { borderColor },
+                    '& fieldset': { borderColor }, '&:hover fieldset': { borderColor }, '&.Mui-focused fieldset': { borderColor },
                   },
                   '& .MuiInputBase-input': { color: textColor, '&::placeholder': { color: mutedColor } },
                 }}

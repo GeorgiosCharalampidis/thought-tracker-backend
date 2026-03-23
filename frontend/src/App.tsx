@@ -4,6 +4,7 @@ import {
   Backdrop,
   Container,
   Box,
+  Divider,
   Typography,
   Button,
   CircularProgress,
@@ -42,6 +43,7 @@ import {
   DailyPrompt,
   Note,
   PendingAction,
+  PromptAnswerResponse,
   SimilarThoughtsResponse,
 } from './types';
 
@@ -269,10 +271,10 @@ function App() {
     setDailyPrompt((prev) => prev ? { ...prev, userAnswerText: answerText } : prev);
   };
 
-  const handleLoadPromptAnswers = async (): Promise<string[]> => {
+  const handleLoadPromptAnswers = async (): Promise<PromptAnswerResponse[]> => {
     if (!dailyPrompt) return [];
-    const response = await axios.get<{ answerText: string }[]>(`/api/daily-prompt/${dailyPrompt.promptIndex}/answers`);
-    return response.data.map((a) => a.answerText);
+    const response = await axios.get<PromptAnswerResponse[]>(`/api/daily-prompt/${dailyPrompt.promptIndex}/answers`);
+    return response.data;
   };
 
   const loadCommunityMood = async () => {
@@ -1046,7 +1048,9 @@ function App() {
                     onSubmit={handleSubmit}
                   />
                   {currentUser && dailyPrompt && (
-                    <DailyPromptCard
+                    <>
+                      <Divider sx={{ my: 4, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
+                      <DailyPromptCard
                       prompt={dailyPrompt}
                       currentUser={currentUser}
                       isDarkMode={isDarkMode}
@@ -1054,6 +1058,7 @@ function App() {
                       onSubmitAnswer={handleSubmitPromptAnswer}
                       onLoadAnswers={handleLoadPromptAnswers}
                     />
+                    </>
                   )}
                 </Grid>
               )}

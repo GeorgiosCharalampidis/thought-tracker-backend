@@ -5,10 +5,13 @@ import com.mindlog.model.PromptAnswer;
 import java.time.LocalDateTime;
 
 public record PromptAnswerDto(
+        Long id,
         String answerText,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        int commentCount,
+        String username
 ) {
     public static PromptAnswerDto from(PromptAnswer answer) {
-        return new PromptAnswerDto(answer.getAnswerText(), answer.getCreatedAt());
+        return new PromptAnswerDto(answer.getId(), answer.getAnswerText(), answer.getCreatedAt(), 0, null);
     }
 }

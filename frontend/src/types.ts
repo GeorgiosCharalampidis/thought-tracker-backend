@@ -32,6 +32,7 @@ export interface Note {
   category: string;
   subCategory?: string;
   commentCount?: number;
+  user?: { username: string };
 }
 
 export interface AuthUser {
@@ -63,6 +64,13 @@ export interface DailyPrompt {
   promptIndex: number;
   question: string;
   userAnswerText?: string;
+}
+
+export interface PromptAnswerResponse {
+  id: number;
+  answerText: string;
+  commentCount: number;
+  username: string;
 }
 
 export interface CommunityMoodEntry {

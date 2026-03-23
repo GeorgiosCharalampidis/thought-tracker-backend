@@ -13,14 +13,14 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import axios from 'axios';
 import { Comment, AuthUser } from '../types';
 
-interface NoteCommentsProps {
-  noteId: number;
+interface PromptAnswerCommentsProps {
+  answerId: number;
   initialCount: number;
   currentUser: AuthUser | null;
   isDarkMode: boolean;
 }
 
-function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCommentsProps) {
+function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode }: PromptAnswerCommentsProps) {
   const [open, setOpen] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -28,14 +28,14 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
   const [submitting, setSubmitting] = useState(false);
   const [draftText, setDraftText] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [count, setCount] = useState(initialCount);
+  const [count, setCount] = useState(initialCount ?? 0);
 
   const loadComments = useCallback(async () => {
-    if (loaded) return;
+    if (loaded || !answerId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get<Comment[]>(`/api/notes/${noteId}/comments`);
+      const res = await axios.get<Comment[]>(`/api/prompt-answers/${answerId}/comments`);
       setComments(res.data);
       setCount(res.data.length);
       setLoaded(true);
@@ -44,9 +44,8 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
     } finally {
       setLoading(false);
     }
-  }, [noteId, loaded]);
+  }, [answerId, loaded]);
 
-  // Load eagerly so comments are ready before the user expands (prevents layout shift)
   useEffect(() => {
     loadComments();
   }, [loadComments]);
@@ -55,11 +54,11 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
 
   const handleSubmit = async () => {
     const text = draftText.trim();
-    if (!text || submitting) return;
+    if (!text || submitting || !answerId) return;
     setSubmitting(true);
     setError(null);
     try {
-      const res = await axios.post<Comment>(`/api/notes/${noteId}/comments`, { text });
+      const res = await axios.post<Comment>(`/api/prompt-answers/${answerId}/comments`, { text });
       setComments(prev => [...prev, res.data]);
       setCount(prev => prev + 1);
       setDraftText('');
@@ -72,7 +71,7 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
 
   const handleDelete = async (commentId: number) => {
     try {
-      await axios.delete(`/api/comments/${commentId}`);
+      await axios.delete(`/api/prompt-answer-comments/${commentId}`);
       setComments(prev => prev.filter(c => c.id !== commentId));
       setCount(prev => Math.max(0, prev - 1));
     } catch {
@@ -87,7 +86,6 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
 
   return (
     <Box mt={1} pt={0.5}>
-      {/* Toggle button */}
       <Box
         display="flex"
         alignItems="center"
@@ -110,7 +108,6 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
           )}
 
 
-          {/* Comment list */}
           {comments.map(comment => (
             <Box
               key={comment.id}
@@ -148,16 +145,13 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
             </Typography>
           )}
 
-          {/* Input — only for logged-in users */}
           {currentUser ? (
             <Box display="flex" gap={1} alignItems="flex-end" mt={1}>
               <TextField
                 value={draftText}
                 onChange={e => setDraftText(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 placeholder="Write a comment…"
-                multiline
-                maxRows={3}
                 size="small"
                 fullWidth
                 inputProps={{ maxLength: 500 }}
@@ -171,6 +165,7 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
                   },
                   '& .MuiInputBase-input': {
                     color: textColor,
+                    textOverflow: 'ellipsis',
                     '&::placeholder': { color: mutedColor },
                   },
                 }}
@@ -203,4 +198,4 @@ function NoteComments({ noteId, initialCount, currentUser, isDarkMode }: NoteCom
   );
 }
 
-export default NoteComments;
+export default PromptAnswerComments;

@@ -30,6 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/notes/preview").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/notes/*/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/prompt-answers/*/comments").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions

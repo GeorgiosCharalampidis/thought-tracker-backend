@@ -31,7 +31,7 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
     border: isDarkMode ? '1px solid rgba(129, 140, 248, 0.28)' : '1px solid rgba(102, 126, 234, 0.18)',
   };
 
-  const renderNoteCards = (items: Note[], cardSx = cardStyle, showComments = false) => (
+  const renderNoteCards = (items: Note[], cardSx = cardStyle, showComments = false, overrideName?: string) => (
     <Box display="flex" flexWrap="wrap" gap={3} justifyContent="center" alignItems="flex-start">
       {items.map((noteItem, index) => (
         <Fade in timeout={600 + index * 200} key={noteItem.id}>
@@ -70,6 +70,11 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
                   )}
                 </Box>
               </Box>
+              {(overrideName ?? noteItem.user?.username) && (
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: isDarkMode ? '#a5b4fc' : '#4f46e5', mb: 1, opacity: 0.85 }}>
+                  {overrideName ?? noteItem.user?.username}
+                </Typography>
+              )}
               <Typography
                 variant="body1"
                 sx={{
@@ -109,10 +114,11 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
               py: 0.5,
               textTransform: 'none',
               color: isDarkMode ? '#cbd5e1' : '#475569',
-              border: '1px solid',
-              borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
+              border: '1px solid transparent',
+              transition: 'background-color 0.2s ease, border-color 0.2s ease',
               '&:hover': {
                 backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)',
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
               },
             }}
           >
@@ -160,7 +166,7 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
                   Your related thoughts
                 </Typography>
               </Box>
-              {renderNoteCards(ownNotes, ownNoteCardStyle, true)}
+              {renderNoteCards(ownNotes, ownNoteCardStyle, true, 'You')}
             </Box>
           )}
         </Box>
