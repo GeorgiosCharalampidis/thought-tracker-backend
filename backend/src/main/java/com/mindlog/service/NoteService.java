@@ -1,5 +1,6 @@
 package com.mindlog.service;
 
+import com.mindlog.dto.OnThisDayResponse;
 import com.mindlog.dto.SimilarThoughtsResponse;
 import com.mindlog.exception.MeaninglessThought;
 import com.mindlog.model.Note;
@@ -174,6 +175,14 @@ public class NoteService {
 
     public List<Note> getNotesByUserIdAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
         return NoteRepository.findByUserAndDateBetween(user, startDate, endDate);
+    }
+
+    public OnThisDayResponse getOnThisDayNotes(Long userId) {
+        LocalDate today = LocalDate.now();
+        List<Note> weekAgo = NoteRepository.findByUser_IdAndDate(userId, today.minusDays(7));
+        List<Note> monthAgo = NoteRepository.findByUser_IdAndDate(userId, today.minusMonths(1));
+        List<Note> yearAgo = NoteRepository.findByUser_IdAndDate(userId, today.minusYears(1));
+        return new OnThisDayResponse(weekAgo, monthAgo, yearAgo);
     }
 
     public List<String> listSubjectsByUserId(Long userId) {

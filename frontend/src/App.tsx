@@ -36,6 +36,7 @@ import NotificationBell from './components/NotificationBell';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
 import SimilarThoughtsSection from './components/SimilarThoughtsSection';
 import ThoughtComposer from './components/ThoughtComposer';
+import OnThisDaySection from './components/OnThisDaySection';
 import StreakBadge from './components/StreakBadge';
 import {
   AnsweredPromptSummary,
@@ -46,6 +47,7 @@ import {
   CommunityMoodEntry,
   DailyPrompt,
   Note,
+  OnThisDayResponse,
   PendingAction,
   PromptAnswerResponse,
   SimilarThoughtsResponse,
@@ -121,6 +123,8 @@ function App() {
   const [categoryMessage, setCategoryMessage] = useState<string>('');
   const [validationMessage, setValidationMessage] = useState<string>('');
   const [showSimilarThoughts, setShowSimilarThoughts] = useState(false);
+  const [similarThoughtsKey, setSimilarThoughtsKey] = useState(0);
+  const [submittedNote, setSubmittedNote] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -160,6 +164,9 @@ function App() {
   const [dailyPrompt, setDailyPrompt] = useState<DailyPrompt | null>(null);
   const [communityMood, setCommunityMood] = useState<CommunityMoodEntry[]>([]);
   const [communityMoodLoading, setCommunityMoodLoading] = useState(false);
+  const [onThisDay, setOnThisDay] = useState<OnThisDayResponse | null>(null);
+  const [onThisDayLoading, setOnThisDayLoading] = useState(false);
+  const [onThisDayAnimated, setOnThisDayAnimated] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -197,6 +204,7 @@ function App() {
     setCategoryMessage('');
     setValidationMessage('');
     setShowSimilarThoughts(false);
+    setSubmittedNote('');
     setChatMessages([]);
     setChatLoading(false);
     setChatOpen(false);
@@ -204,16 +212,21 @@ function App() {
 
   const applySimilarThoughtsResponse = (
     response: SimilarThoughtsResponse,
-    options?: { clearComposer?: boolean },
+    options?: { clearComposer?: boolean; submittedContent?: string },
   ) => {
     if (response.inputAccepted) {
       setSimilarThoughts(response.notes);
       setOwnSimilarThoughts(response.ownNotes ?? []);
       setCategoryMessage(response.categoryMessage);
       setValidationMessage('');
+      const content = options?.submittedContent ?? note;
       if (options?.clearComposer !== false) {
+        setSubmittedNote(content);
         setNote('');
+      } else {
+        setSubmittedNote(content);
       }
+      setSimilarThoughtsKey(k => k + 1);
       setShowSimilarThoughts(true);
       return;
     }
@@ -300,6 +313,19 @@ function App() {
     }
   };
 
+  const loadOnThisDay = async (userId: number) => {
+    try {
+      const response = await axios.get<OnThisDayResponse>(`/api/notes/${userId}/on-this-day`);
+      const { weekAgo, monthAgo, yearAgo } = response.data;
+      const hasAny = weekAgo?.length || monthAgo?.length || yearAgo?.length;
+      setOnThisDay(hasAny ? response.data : null);
+    } catch (error) {
+      console.error('Error loading on-this-day memories:', error);
+    } finally {
+      setOnThisDayLoading(false);
+    }
+  };
+
   const loadCommunityMood = async () => {
     setCommunityMoodLoading(true);
     try {
@@ -314,13 +340,17 @@ function App() {
 
   useEffect(() => {
     if (currentUser) {
+      setOnThisDayLoading(true);
       void loadNotes(currentUser.id);
       void loadDailyPrompt();
+      void loadOnThisDay(currentUser.id);
       return;
     }
 
     setSavedNotes([]);
     setDailyPrompt(null);
+    setOnThisDay(null);
+    setOnThisDayLoading(false);
     setNotesError('');
     setNotesLoading(false);
     resetJournalState();
@@ -538,7 +568,6 @@ function App() {
   };
 
   const handleSavedNoteSelect = async (savedNote: Note) => {
-    setNote(savedNote.content);
     setValidationMessage('');
 
     if (!currentUser) {
@@ -551,7 +580,7 @@ function App() {
       const response = await axios.get<SimilarThoughtsResponse>(
         `/api/notes/${currentUser.id}/subject/${encodeURIComponent(savedNote.category)}/similar-to/${savedNote.id}`,
       );
-      applySimilarThoughtsResponse(response.data, { clearComposer: false });
+      applySimilarThoughtsResponse(response.data, { clearComposer: false, submittedContent: savedNote.content });
     } catch (error) {
       console.error('Error loading similar thoughts for saved note:', error);
       setOwnSimilarThoughts([]);
@@ -669,7 +698,7 @@ function App() {
           ? (isMobile ? (isSidebarOpen ? '#202120' : '#000000') : '#202120')
           : (isMobile ? (isSidebarOpen ? '#edf1f6' : '#f1f5f9') : '#f1f5f9'),
         transition: 'background-color 0.22s ease',
-        paddingTop: isMobile ? '72px' : (showSimilarThoughts ? '12vh' : '28vh'),
+        paddingTop: isMobile ? '72px' : (showSimilarThoughts ? '12vh' : (onThisDay ? '10vh' : '28vh')),
         // On mobile, vertically center the composer when nothing else is shown
         ...(isMobile && !showSimilarThoughts && !chatOpen && {
           display: 'flex',
@@ -1112,8 +1141,17 @@ function App() {
         >
           <Container maxWidth="lg">
             <Grid container spacing={2}>
-              {!showSimilarThoughts && (
+              {onThisDayLoading ? null : !showSimilarThoughts && (
                 <Grid item xs={12}>
+                  {currentUser && onThisDay && (
+                    <OnThisDaySection
+                      memories={onThisDay}
+                      isDarkMode={isDarkMode}
+                      onSelectMemory={handleSavedNoteSelect}
+                      skipAnimation={onThisDayAnimated}
+                      onAnimated={() => setOnThisDayAnimated(true)}
+                    />
+                  )}
                   <ThoughtComposer
                     headingText={headingText}
                     thoughtPlaceholder={thoughtPlaceholder}
@@ -1131,7 +1169,7 @@ function App() {
                   />
                   {currentUser && dailyPrompt && (
                     <>
-                      <Divider sx={{ my: 4, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
+                      <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
                       <DailyPromptCard
                       prompt={dailyPrompt}
                       currentUser={currentUser}
@@ -1150,11 +1188,13 @@ function App() {
               {showSimilarThoughts && (
                 <Grid item xs={12}>
                   <SimilarThoughtsSection
+                    key={similarThoughtsKey}
                     notes={similarThoughts}
                     ownNotes={ownSimilarThoughts}
                     categoryMessage={categoryMessage}
                     isDarkMode={isDarkMode}
                     currentUser={currentUser}
+                    submittedNote={submittedNote}
                     onShareAnotherThought={handleShareAnotherThought}
                   />
                 </Grid>

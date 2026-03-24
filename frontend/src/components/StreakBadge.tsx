@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { keyframes } from '@emotion/react';
 
@@ -69,6 +69,8 @@ const hazeT4 = keyframes`
   50%       { opacity: 0.58; transform: scale(1.35); }
 `;
 
+const PULSE_DURATION = '1.8s';
+
 
 interface Tier {
   minStreak: number;
@@ -90,7 +92,7 @@ const TIERS: Tier[] = [
     animation: flicker4,
     duration: '3s',
     hazeAnimation: hazeT4,
-    hazeDuration: '2.2s',
+    hazeDuration: PULSE_DURATION,
     hazeColor: 'radial-gradient(ellipse, rgba(251,146,60,0.55) 0%, rgba(239,68,68,0.25) 50%, transparent 75%)',
     labelColor: (dark) => dark ? '#f1f5f9' : '#1e293b',
   },
@@ -101,7 +103,7 @@ const TIERS: Tier[] = [
     animation: flicker3,
     duration: '2.2s',
     hazeAnimation: hazeT3,
-    hazeDuration: '3s',
+    hazeDuration: PULSE_DURATION,
     hazeColor: 'radial-gradient(ellipse, rgba(251,146,60,0.4) 0%, rgba(239,68,68,0.15) 55%, transparent 75%)',
     labelColor: (dark) => dark ? '#f1f5f9' : '#1e293b',
   },
@@ -136,6 +138,14 @@ interface StreakBadgeProps {
 }
 
 export default function StreakBadge({ streak, isDarkMode, isMobile }: StreakBadgeProps) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const showTimer = setTimeout(() => setVisible(true), 50);
+    const hideTimer = setTimeout(() => setVisible(false), 4500);
+    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
+  }, [streak]);
+
   if (streak <= 0) return null;
 
   const tier = TIERS.find(t => streak >= t.minStreak)!;
@@ -154,6 +164,13 @@ export default function StreakBadge({ streak, isDarkMode, isMobile }: StreakBadg
         pointerEvents: 'none',
         userSelect: 'none',
         whiteSpace: 'nowrap',
+        opacity: visible ? 1 : 0,
+        transition: visible ? 'opacity 0.4s ease' : 'opacity 1.5s ease',
+        '@keyframes streakPulse': {
+          '0%, 100%': { transform: 'translateX(calc(-50% - 1.2rem)) scale(1)' },
+          '50%':       { transform: 'translateX(calc(-50% - 1.2rem)) scale(1.12)' },
+        },
+        animation: 'streakPulse 1.8s ease-in-out infinite',
       }}
     >
       {/* Flame emoji — fixed slot so text never shifts regardless of tier size */}

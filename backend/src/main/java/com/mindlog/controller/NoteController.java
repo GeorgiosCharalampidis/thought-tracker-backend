@@ -1,6 +1,7 @@
 package com.mindlog.controller;
 
 import com.mindlog.dto.ChatRequest;
+import com.mindlog.dto.OnThisDayResponse;
 import com.mindlog.dto.ResonanceSnippetResponse;
 import com.mindlog.dto.SimilarThoughtsResponse;
 import com.mindlog.service.NoteService;
@@ -171,6 +172,15 @@ public class NoteController {
             Authentication authentication) {
         userService.requireAuthorizedUser(userId, authentication);
         return ResponseEntity.ok(resonanceService.getResonancesForNote(noteId, userId));
+    }
+
+    @GetMapping("/{userId}/on-this-day")
+    public ResponseEntity<OnThisDayResponse> getOnThisDayNotes(
+            @PathVariable Long userId,
+            Authentication authentication) {
+        userService.requireAuthorizedUser(userId, authentication);
+        OnThisDayResponse response = NoteService.getOnThisDayNotes(userId);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{userId}/chat")

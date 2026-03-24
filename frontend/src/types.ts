@@ -85,6 +85,12 @@ export interface AnsweredPromptSummary {
   allAnswers: PromptAnswerResponse[];
 }
 
+export interface OnThisDayResponse {
+  weekAgo: Note[];
+  monthAgo: Note[];
+  yearAgo: Note[];
+}
+
 export interface CommunityMoodEntry {
   domainName: string;
   color: string;

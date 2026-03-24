@@ -9,11 +9,12 @@ interface SimilarThoughtsSectionProps {
   categoryMessage: string;
   isDarkMode: boolean;
   currentUser: AuthUser | null;
+  submittedNote?: string;
   onShareAnotherThought: () => void;
 }
 
 
-function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, currentUser, onShareAnotherThought }: SimilarThoughtsSectionProps) {
+function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, currentUser, submittedNote, onShareAnotherThought }: SimilarThoughtsSectionProps) {
   const cardStyle = {
     minWidth: '200px',
     maxWidth: '400px',
@@ -101,29 +102,17 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
   );
 
   return (
+    <>
     <Slide direction="up" in timeout={1000}>
       <Box sx={{ pb: 3 }}>
         <Box display="flex" flexDirection="column" alignItems="center" width="100%">
-          <Button
-            variant="text"
-            onClick={onShareAnotherThought}
-            sx={{
-              mb: 3,
-              borderRadius: 999,
-              px: 1.25,
-              py: 0.5,
-              textTransform: 'none',
-              color: isDarkMode ? '#cbd5e1' : '#475569',
-              border: '1px solid transparent',
-              transition: 'background-color 0.2s ease, border-color 0.2s ease',
-              '&:hover': {
-                backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.03)',
-                borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
-              },
-            }}
-          >
-            Share another thought
-          </Button>
+
+          {/* Submitted thought */}
+          {submittedNote && (
+            <Typography sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic', mb: 4 }}>
+              {submittedNote}
+            </Typography>
+          )}
 
           {/* Community notes */}
           <Box
@@ -171,7 +160,35 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
           )}
         </Box>
       </Box>
+
     </Slide>
+
+      {/* Sticky "Share another thought" button */}
+      <Box sx={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', zIndex: 900 }}>
+        <Button
+          variant="text"
+          onClick={onShareAnotherThought}
+          sx={{
+            borderRadius: 999,
+            px: 2,
+            py: 0.75,
+            textTransform: 'none',
+            fontSize: '0.88rem',
+            color: isDarkMode ? '#cbd5e1' : '#475569',
+            backgroundColor: isDarkMode ? 'rgba(32,33,32,0.85)' : 'rgba(241,245,249,0.85)',
+            border: isDarkMode ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(15,23,42,0.12)',
+            backdropFilter: 'blur(8px)',
+            transition: 'background-color 0.2s ease, border-color 0.2s ease',
+            '&:hover': {
+              backgroundColor: isDarkMode ? 'rgba(42,43,42,0.92)' : 'rgba(226,232,240,0.92)',
+              borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : 'rgba(15,23,42,0.2)',
+            },
+          }}
+        >
+          Share another thought
+        </Button>
+      </Box>
+    </>
   );
 }
 
