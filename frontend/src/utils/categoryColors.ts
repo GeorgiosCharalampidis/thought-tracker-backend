@@ -17,9 +17,10 @@ export const DOMAIN_GROUPS: DomainGroup[] = [
       'Anxiety & Overthinking',
       'Depression & Low Mood',
       'Self-Doubt & Uncertainty',
-      'Stress & Feeling Overwhelmed',
       'Self-Esteem & Self-Worth',
       'Motivation & Energy Issues',
+      'Anger & Frustration',
+      'Grief & Loss',
     ],
   },
   {
@@ -40,7 +41,6 @@ export const DOMAIN_GROUPS: DomainGroup[] = [
       'Fitness & Physical Activity',
       'Sleep & Energy Issues',
       'Nutrition & Eating',
-      'Environment & Nature',
     ],
   },
   {
@@ -56,7 +56,7 @@ export const DOMAIN_GROUPS: DomainGroup[] = [
   {
     name: 'Finance',
     color: '#f97316',
-    categories: ['Financial Stress & Anxiety', 'Financial Planning & Goals'],
+    categories: ['Money & Finances'],
   },
   {
     name: 'Joy',
@@ -69,10 +69,8 @@ export const DOMAIN_GROUPS: DomainGroup[] = [
     categories: [
       'Major Life Transitions',
       'Housing & Living Situation',
-      'News & Political Events',
-      'Technology & Digital Life',
+      'Environment & Nature',
       'Daily Life & Observations',
-      'Open Reflections',
     ],
   },
 ];

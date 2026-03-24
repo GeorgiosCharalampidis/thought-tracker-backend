@@ -229,7 +229,7 @@ public class NoteService {
         int candidateFetchLimit = MAX_COMMUNITY_NOTES * 4; // fetch extra for Java-side filtering
 
         List<Note> candidateNotes;
-        if (Category.OPEN_REFLECTIONS.getDisplayName().equals(category) || embeddingStr == null) {
+        if (Category.DAILY_LIFE_OBSERVATIONS.getDisplayName().equals(category) || embeddingStr == null) {
             if (embeddingStr == null) {
                 candidateNotes = currentUserId != null
                         ? NoteRepository.findByCategoryAndUser_IdNot(category, currentUserId)

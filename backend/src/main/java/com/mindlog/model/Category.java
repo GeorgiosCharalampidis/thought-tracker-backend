@@ -23,27 +23,33 @@ public enum Category {
 
     ANXIETY_OVERTHINKING("Anxiety & Overthinking",
         "Worry, anxious thoughts, overthinking, racing mind, stress about future, " +
-        "catastrophic thinking, mental loops, anxiety symptoms."),
-    
+        "catastrophic thinking, mental loops, anxiety symptoms, general stress, " +
+        "feeling overwhelmed by life, too much to handle, pressure from multiple sources, " +
+        "political stress, news anxiety, doomscrolling, world events causing distress."),
+
     DEPRESSION_LOW_MOOD("Depression & Low Mood",
         "Sadness, feeling down, depression symptoms, low energy, hopelessness, " +
         "emotional numbness, lack of motivation, persistent sadness."),
-    
+
     SELF_DOUBT_UNCERTAINTY("Self-Doubt & Uncertainty",
         "Questioning decisions, uncertainty about future, imposter syndrome, " +
         "lack of confidence in choices, feeling lost or directionless."),
-    
-    STRESS_FEELING_OVERWHELMED("Stress & Feeling Overwhelmed",
-        "General stress, feeling overwhelmed by life, too much to handle, " +
-        "pressure from multiple sources, stress symptoms."),
-    
+
     SELF_ESTEEM_SELF_WORTH("Self-Esteem & Self-Worth",
         "Self-confidence issues, self-worth concerns, feeling inadequate, " +
         "comparing to others, self-image problems."),
-    
+
     MOTIVATION_ENERGY_ISSUES("Motivation & Energy Issues",
         "Lack of motivation, low energy, procrastination, feeling stuck, " +
         "difficulty getting started, energy depletion."),
+
+    ANGER_FRUSTRATION("Anger & Frustration",
+        "Feeling angry, frustrated, irritated, resentful, rage, annoyance, " +
+        "losing temper, feeling wronged, injustice, venting, aggression."),
+
+    GRIEF_LOSS("Grief & Loss",
+        "Losing someone, death, bereavement, mourning, grief, heartbreak from loss, " +
+        "end of a relationship, losing a job, losing something meaningful, missing someone who is gone."),
 
     // Relationships - More specific
     ROMANTIC_RELATIONSHIPS("Romantic Relationships",
@@ -96,13 +102,10 @@ public enum Category {
         "Spiritual practices, meditation, life purpose, meaning, values, " +
         "philosophical thoughts, spiritual growth, existential questions."),
 
-    FINANCIAL_STRESS_ANXIETY("Financial Stress & Anxiety",
+    MONEY_FINANCES("Money & Finances",
         "Money worries, financial pressure, debt concerns, budgeting stress, " +
-        "financial insecurity, money-related anxiety."),
-    
-    FINANCIAL_PLANNING_GOALS("Financial Planning & Goals",
-        "Financial planning, saving goals, investment decisions, budgeting, " +
-        "financial literacy, money management, financial future."),
+        "financial insecurity, money-related anxiety, financial planning, saving goals, " +
+        "investment decisions, budgeting, financial literacy, money management, financial future."),
     
     MAJOR_LIFE_TRANSITIONS("Major Life Transitions",
         "Life changes, moving, new job, relationship changes, major decisions, " +
@@ -112,14 +115,6 @@ public enum Category {
         "Living arrangements, housing issues, roommate problems, " +
         "home environment, living space concerns."),
 
-    NEWS_POLITICAL_EVENTS("News & Political Events",
-        "Current events, politics, news consumption, world events, " +
-        "political stress, social issues, global concerns."),
-    
-    TECHNOLOGY_DIGITAL_LIFE("Technology & Digital Life",
-        "Social media, screen time, digital wellness, technology use, " +
-        "online interactions, digital overwhelm."),
-    
     ENVIRONMENT_NATURE("Environment & Nature",
         "Weather, seasons, nature connection, environmental concerns, " +
         "outdoor activities, natural world appreciation."),
@@ -129,12 +124,9 @@ public enum Category {
         "celebrations, joyful moments, appreciation."),
     
     DAILY_LIFE_OBSERVATIONS("Daily Life & Observations",
-        "Random thoughts, daily observations, mundane moments, " +
-        "everyday experiences, simple reflections."),
-    
-    OPEN_REFLECTIONS("Open Reflections",
-        "General thoughts, philosophical musings, random reflections, " +
-        "stream of consciousness, miscellaneous thoughts.");
+        "Random thoughts, daily observations, mundane moments, everyday experiences, " +
+        "simple reflections, general thoughts, philosophical musings, stream of consciousness, " +
+        "miscellaneous thoughts, screen time, social media, digital life, technology use.");
 
     private final String displayName;
     private final String keywords;
@@ -180,11 +172,11 @@ public enum Category {
         return Arrays.stream(values())
                 .filter(category -> category.getDisplayName().equals(displayName))
                 .findFirst()
-                .orElse(OPEN_REFLECTIONS);
+                .orElse(DAILY_LIFE_OBSERVATIONS);
     }
 
     public static Category fromString(String input) {
-        if (input == null) return OPEN_REFLECTIONS;
+        if (input == null) return DAILY_LIFE_OBSERVATIONS;
 
         String normalizedInput = input.trim().toUpperCase(Locale.ROOT);
 
