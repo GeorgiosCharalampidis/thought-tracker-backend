@@ -27,7 +27,7 @@ public class PromptAnswer {
     private LocalDateTime createdAt;
 
     @Column(name = "saved")
-    private Boolean saved;
+    private Boolean saved = false;
 
     @PrePersist
     private void prePersist() {
@@ -47,6 +47,7 @@ public class PromptAnswer {
     public Long getUserId() { return userId; }
     public int getPromptIndex() { return promptIndex; }
     public String getAnswerText() { return answerText; }
+    public void setAnswerText(String answerText) { this.answerText = answerText; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public boolean isSaved() { return saved != null && saved; }
     public void setSaved(boolean saved) { this.saved = saved; }

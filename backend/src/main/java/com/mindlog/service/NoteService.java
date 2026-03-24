@@ -54,9 +54,13 @@ public class NoteService {
     public SimilarThoughtsResponse createNoteWithValidation(Long userId, Note note) {
         userService.getUserById(userId);
 
-        String validationMessage = validateThoughtContent(note);
-        if (validationMessage != null) {
-            return createInvalidInputResponse(validationMessage);
+        ValidationResult validation = validateThoughtContent(note);
+        if (!validation.isValid()) {
+            return createInvalidInputResponse(validation.errorMessage());
+        }
+        // Pre-set LLM-detected category so autoClusterUserNotes skips a second LLM call
+        if (validation.llmCategory() != null) {
+            note.setCategory(validation.llmCategory());
         }
 
         try {
@@ -79,9 +83,12 @@ public class NoteService {
     }
 
     public SimilarThoughtsResponse previewNoteWithValidation(Note note) {
-        String validationMessage = validateThoughtContent(note);
-        if (validationMessage != null) {
-            return createInvalidInputResponse(validationMessage);
+        ValidationResult validation = validateThoughtContent(note);
+        if (!validation.isValid()) {
+            return createInvalidInputResponse(validation.errorMessage());
+        }
+        if (validation.llmCategory() != null) {
+            note.setCategory(validation.llmCategory());
         }
 
         try {
@@ -140,14 +147,12 @@ public class NoteService {
         if (updatedNote.getContent() != null && !updatedNote.getContent().isEmpty()) {
             // Validate that the updated content is a meaningful thought
 
-            boolean manualThoughtCheck = TextValidator.isMeaningfulThought(updatedNote.getContent());
-            boolean aiServiceThoughtCheck = aiService.isValidThought(updatedNote.getContent());
-
-            if (!manualThoughtCheck) {
+            if (!TextValidator.isMeaningfulThought(updatedNote.getContent())) {
                 throw new MeaninglessThought(TextValidator.getValidationMessage(updatedNote.getContent()));
             }
-            if (!aiServiceThoughtCheck) {
-                throw new MeaninglessThought("Well the llm denies your thought :(");
+            AiService.ClassificationResult result = aiService.validateAndCategorize(updatedNote.getContent());
+            if (result != null && !result.valid()) {
+                throw new MeaninglessThought(TextValidator.getValidationMessage(updatedNote.getContent()));
             }
             existingNote.setContent(updatedNote.getContent());
         }
@@ -205,12 +210,13 @@ public class NoteService {
         Long referenceNoteId = referenceNote.getId();
         String embeddingStr = referenceNote.getEmbeddingJson();
 
-        // Own notes: DB-level cosine similarity search via pgvector index
+        // Own notes: search within the same category to avoid cross-category noise
         List<Note> ownNotes = Collections.emptyList();
-        if (currentUserId != null && embeddingStr != null) {
-            float ownDistThreshold = 1.0f - OWN_NOTE_SIMILARITY_THRESHOLD; // 1 - 0.72 = 0.28
-            ownNotes = NoteRepository.findSimilarByUserId(
+        if (currentUserId != null && embeddingStr != null && category != null) {
+            float ownDistThreshold = 1.0f - OWN_NOTE_SIMILARITY_THRESHOLD;
+            ownNotes = NoteRepository.findSimilarByUserIdAndCategory(
                     currentUserId,
+                    category,
                     referenceNoteId != null ? referenceNoteId : -1L,
                     embeddingStr,
                     ownDistThreshold,
@@ -275,28 +281,38 @@ public class NoteService {
         return findBestMatch(noteEmbedding, themes, themeEmbeddings);
     }
 
-    private String validateThoughtContent(Note note) {
+    private record ValidationResult(String errorMessage, String llmCategory) {
+        boolean isValid() { return errorMessage == null; }
+        static ValidationResult ok(String llmCategory) { return new ValidationResult(null, llmCategory); }
+        static ValidationResult fail(String message) { return new ValidationResult(message, null); }
+    }
+
+    private ValidationResult validateThoughtContent(Note note) {
         if (note == null || note.getContent() == null || note.getContent().isEmpty()) {
-            return "Seems like you didn't share any thought.";
+            return ValidationResult.fail("Seems like you didn't share any thought.");
         }
 
-        boolean isValid = TextValidator.isMeaningfulThought(note.getContent());
-        if (!isValid) {
-            return TextValidator.getValidationMessage(note.getContent());
+        if (!TextValidator.isMeaningfulThought(note.getContent())) {
+            return ValidationResult.fail(TextValidator.getValidationMessage(note.getContent()));
         }
 
+        // Single LLM call: validate + categorize together
         try {
-            isValid = aiService.isValidThought(note.getContent());
-            logger.info("AI text validation result for '{}': {}", note.getContent().substring(0, Math.min(50, note.getContent().length())), isValid);
+            AiService.ClassificationResult result = aiService.validateAndCategorize(note.getContent());
+            if (result != null) {
+                logger.info("LLM classified '{}...' — valid={}, category={}",
+                        note.getContent().substring(0, Math.min(50, note.getContent().length())),
+                        result.valid(), result.category());
+                if (!result.valid()) {
+                    return ValidationResult.fail(TextValidator.getValidationMessage(note.getContent()));
+                }
+                return ValidationResult.ok(result.category());
+            }
         } catch (Exception e) {
-            logger.error("AI text validation failed {}, will proceed with local validation result: {}", e.getMessage(), isValid);
+            logger.error("validateAndCategorize failed, proceeding without LLM: {}", e.getMessage());
         }
 
-        if (!isValid) {
-            return TextValidator.getValidationMessage(note.getContent());
-        }
-
-        return null;
+        return ValidationResult.ok(null);
     }
 
     private SimilarThoughtsResponse createInvalidInputResponse(String validationMessage) {
@@ -304,27 +320,34 @@ public class NoteService {
     }
 
     private void autoClusterUserNotes(List<Note> notes) {
-        List<String> themes = Category.allLabels();
-        List<String> themeDescriptions = Category.allDescriptions();
-        List<float[]> themeEmbeddings = embeddingService.embedAll(themeDescriptions);
-
         List<String> noteTexts = notes.stream().map(Note::getContent).collect(Collectors.toList());
         List<float[]> noteEmbeddings = embeddingService.embedAll(noteTexts);
+
+        // Lazily computed — only needed if LLM categorization fails for any note
+        List<float[]> themeEmbeddings = null;
 
         for (int i = 0; i < notes.size(); i++) {
             Note note = notes.get(i);
             float[] noteEmbedding = noteEmbeddings.get(i);
-
             note.setEmbedding(noteEmbedding);
 
-            ScoredMatch bestThemeMatch = findBestMatchingTheme(noteEmbedding, themes, themeEmbeddings);
-            String bestTheme = bestThemeMatch.isConfident(CATEGORY_CONFIDENCE_THRESHOLD, CATEGORY_CONFIDENCE_MARGIN)
-                    ? bestThemeMatch.label()
-                    : Category.OPEN_REFLECTIONS.getDisplayName();
-            note.setCategory(bestTheme);
+            // Use pre-set category from validateAndCategorize if available (avoids a second LLM call)
+            String bestTheme = note.getCategory();
 
-            String bestSubCategory = findBestSubCategory(bestTheme, noteEmbedding);
-            note.setSubCategory(bestSubCategory);
+            // Fall back to embedding-based categorization if no category was pre-set
+            if (bestTheme == null) {
+                logger.info("Falling back to embedding-based categorization for note");
+                if (themeEmbeddings == null) {
+                    themeEmbeddings = embeddingService.embedAll(Category.allDescriptions());
+                }
+                ScoredMatch bestThemeMatch = findBestMatchingTheme(noteEmbedding, Category.allLabels(), themeEmbeddings);
+                bestTheme = bestThemeMatch.isConfident(CATEGORY_CONFIDENCE_THRESHOLD, CATEGORY_CONFIDENCE_MARGIN)
+                        ? bestThemeMatch.label()
+                        : Category.OPEN_REFLECTIONS.getDisplayName();
+            }
+
+            note.setCategory(bestTheme);
+            note.setSubCategory(findBestSubCategory(bestTheme, noteEmbedding));
         }
     }
 
@@ -357,6 +380,7 @@ public class NoteService {
         return bestSubCategory.label();
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteNoteByIdAndUserId(Long userId, Long noteId) {
         Note note = NoteRepository.findByUser_Id(userId)
                 .stream()
@@ -364,6 +388,7 @@ public class NoteService {
                 .findFirst()
                 .orElseThrow(() -> new BadCredentialsException("Note with ID " + noteId + " not found for user with ID " + userId));
 
+        resonanceService.deleteResonancesForNote(noteId);
         NoteRepository.delete(note);
     }
 

@@ -36,6 +36,7 @@ import NotificationBell from './components/NotificationBell';
 import SavedThoughtsSidebar from './components/SavedThoughtsSidebar';
 import SimilarThoughtsSection from './components/SimilarThoughtsSection';
 import ThoughtComposer from './components/ThoughtComposer';
+import StreakBadge from './components/StreakBadge';
 import {
   AnsweredPromptSummary,
   AuthMode,
@@ -133,8 +134,6 @@ function App() {
   const [myPromptsOpen, setMyPromptsOpen] = useState(false);
   const [myPrompts, setMyPrompts] = useState<AnsweredPromptSummary[]>([]);
   const [myPromptsLoading, setMyPromptsLoading] = useState(false);
-  const [streakVisible, setStreakVisible] = useState(false);
-  const streakShownRef = useRef(false);
   const chatAbortRef = useRef<AbortController | null>(null);
   const floatingRailRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -274,6 +273,12 @@ function App() {
   const handleSubmitPromptAnswer = async (answerText: string) => {
     if (!dailyPrompt) return;
     await axios.post(`/api/daily-prompt/${dailyPrompt.promptIndex}/answer`, { answerText });
+    setDailyPrompt((prev) => prev ? { ...prev, userAnswerText: answerText } : prev);
+  };
+
+  const handleEditPromptAnswer = async (answerText: string) => {
+    if (!dailyPrompt) return;
+    await axios.put(`/api/daily-prompt/${dailyPrompt.promptIndex}/answer`, { answerText });
     setDailyPrompt((prev) => prev ? { ...prev, userAnswerText: answerText } : prev);
   };
 
@@ -565,14 +570,6 @@ function App() {
   const isMobile = useMediaQuery('(max-width: 600px)');
   const streak = computeStreak(savedNotes);
 
-  useEffect(() => {
-    if (streak > 0 && currentUser && !streakShownRef.current) {
-      streakShownRef.current = true;
-      setStreakVisible(true);
-      const timer = setTimeout(() => setStreakVisible(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [streak, currentUser]);
   const theme = createAppTheme(isDarkMode, isMobile);
   const sidebarWidth = isMobile ? Math.min(window.innerWidth * 0.85, 320) : 284;
   const sidebarVisible = isSidebarOpen || isSidebarClosing;
@@ -660,29 +657,8 @@ function App() {
         <Backdrop open={isSidebarOpen} onClick={closeSidebar} sx={{ zIndex: 1199 }} />
       )}
 
-      {/* Centered streak indicator — shown once on load, then fades out */}
       {currentUser && streak > 0 && (
-        <Box sx={{
-          position: 'fixed',
-          top: isMobile ? 76 : 24,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          fontSize: '0.95rem',
-          color: isDarkMode ? '#cbd5e1' : '#475569',
-          userSelect: 'none',
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          opacity: streakVisible ? 1 : 0,
-          transition: streakVisible
-            ? 'opacity 0.5s ease'
-            : 'opacity 1.2s ease',
-        }}>
-          🔥 {streak}-day streak
-        </Box>
+        <StreakBadge streak={streak} isDarkMode={isDarkMode} isMobile={isMobile} />
       )}
 
       {/* Page background and top-level layout wrapper for the app. */}
@@ -1161,7 +1137,9 @@ function App() {
                       currentUser={currentUser}
                       isDarkMode={isDarkMode}
                       isMobile={isMobile}
+                      isToday={true}
                       onSubmitAnswer={handleSubmitPromptAnswer}
+                      onEditAnswer={handleEditPromptAnswer}
                       onLoadAnswers={handleLoadPromptAnswers}
                     />
                     </>

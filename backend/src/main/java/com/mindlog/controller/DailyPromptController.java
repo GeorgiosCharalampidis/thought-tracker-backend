@@ -50,6 +50,16 @@ public class DailyPromptController {
         return ResponseEntity.ok(dailyPromptService.getAnswersForPrompt(promptIndex, user.getId()));
     }
 
+    @PutMapping("/{promptIndex}/answer")
+    public ResponseEntity<Void> updateAnswer(
+            @PathVariable int promptIndex,
+            @RequestBody Map<String, String> body,
+            Authentication authentication) {
+        User user = userService.getAuthenticatedUser(authentication);
+        dailyPromptService.updateAnswer(user.getId(), promptIndex, body.get("answerText"));
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{promptIndex}/save")
     public ResponseEntity<Void> savePrompt(@PathVariable int promptIndex, Authentication authentication) {
         User user = userService.getAuthenticatedUser(authentication);

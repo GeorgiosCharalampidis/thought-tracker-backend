@@ -74,6 +74,24 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
 
     @Query(value = """
             SELECT * FROM notes
+            WHERE user_id = :userId
+              AND category = :category
+              AND (:excludeId = -1 OR id != :excludeId)
+              AND embedding IS NOT NULL
+              AND (embedding <=> CAST(:embedding AS vector)) <= :distanceThreshold
+            ORDER BY embedding <=> CAST(:embedding AS vector)
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Note> findSimilarByUserIdAndCategory(
+            @Param("userId") Long userId,
+            @Param("category") String category,
+            @Param("excludeId") Long excludeId,
+            @Param("embedding") String embedding,
+            @Param("distanceThreshold") float distanceThreshold,
+            @Param("limit") int limit);
+
+    @Query(value = """
+            SELECT * FROM notes
             WHERE category = :category
               AND user_id != :userId
               AND embedding IS NOT NULL

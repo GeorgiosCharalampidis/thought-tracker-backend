@@ -1,7 +1,6 @@
 package com.mindlog.service;
 
 import com.mindlog.config.AiServiceConfig;
-import com.mindlog.util.TextValidator;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mindlog.dto.ChatMessage;
+import com.mindlog.model.Category;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AiService {
@@ -159,88 +160,81 @@ public class AiService {
         }
     }
 
-    public boolean isValidThought(String thoughtText) {
-        // Quick check - if AI service is not available, fall back immediately
-        try {
-            // Test if the service is reachable with a quick ping
-            restTemplate.getForEntity(config.getUrl() + "/api/tags", String.class);
-        } catch (Exception e) {
-            logger.warn("AI service not available, falling back to basic validation: {}", e.getMessage());
-            return TextValidator.isMeaningfulThought(thoughtText);
-        }
+    public record ClassificationResult(boolean valid, String category) {}
 
-        String systemPrompt = "You are a text validator for a personal reflection app. " +
-                "Respond with ONLY 'VALID' or 'INVALID' — nothing else. " +
+    /**
+     * Single LLM call that both validates the entry and classifies it into a category.
+     * Returns null if the call fails (callers should fall back to separate validation + embedding categorization).
+     */
+    public ClassificationResult validateAndCategorize(String noteContent) {
+        String categoryList = Category.allLabels().stream()
+                .collect(Collectors.joining("\n- ", "- ", ""));
 
-                "VALID: Any coherent word, phrase, or sentence that conveys a personal experience, activity, event, thought, reflection, decision, concern, uncertainty, dilemma, judgment, self-description, feeling, goal, aspiration, desire, or wish. " +
-                "Even short or simple expressions (e.g., 'tired', 'feeling bad', 'want to be rich', 'need a vacation') are VALID if they clearly express a personal state, thought, or desire. " +
-                "The text must have clear semantic meaning and be understandable by a human reader. " +
-
-                "INVALID: Pure greetings with no personal content, casual/social questions, test messages, gibberish, random characters, keyboard smashing, repeated characters, or meaningless text. " +
-                "Also INVALID if the text has no clear semantic meaning, cannot be understood, or cannot reasonably be classified as a personal reflection. " +
-                "Single words with no meaning (e.g., 'asdfgh'), incomplete fragments that cut off mid-thought, and dismissive responses like 'whatever' are INVALID. " +
-
-                "Examples — VALID: 'I am such a bad person', 'tired', 'feeling stressed', 'argued with my boss', 'I don’t know how to ask my boss for more flexibility', 'thinking about quitting my job'. " +
-                "Examples — INVALID: 'hello', 'hey what's up', 'how are you', 'test', 'whatever', 'asdfgh', 'today I did'. " +
-
-                "Rule of thumb: Be permissive with genuine personal expressions including goals, desires, and aspirations. " +
-                "Reject only if the input is clearly meaningless, non-personal, or cannot be understood.";
-
+        String systemPrompt = "You are a classifier for a journaling app.\n" +
+                "Respond with ONLY this JSON (no markdown, no explanation):\n" +
+                "{\"valid\": true, \"category\": \"...\"}\n\n" +
+                "valid: true for any genuine personal expression; false only for gibberish or meaningless text.\n" +
+                "category: the category that best captures what the person is truly experiencing — read the full entry and look past surface words to the emotional or thematic core.\n\n" +
+                "Categories:\n" + categoryList;
 
         String url = config.getUrl() + "/api/chat";
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("Accept-Charset", "UTF-8");
 
         Map<String, Object> payload = Map.of(
-                "model", config.getModel(),
+                "model", config.getClassificationModel(),
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
-                        Map.of("role", "user", "content", thoughtText)
+                        Map.of("role", "user", "content", noteContent)
                 )
         );
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(payload, headers);
 
         try {
-            logger.info("Validating thought with AI service at URL: {}", url);
-            logger.debug("Request payload: {}", payload);
-            
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
-            
-            logger.info("AI validation response status: {}", response.getStatusCode());
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) return null;
 
-            if (response.getStatusCode().is2xxSuccessful()) {
-                try {
-                    StringBuilder fullResponse = new StringBuilder();
-                    String responseBody = response.getBody();
-
-                    for (String jsonChunk : responseBody.split("\n")) {
-                        if (jsonChunk.trim().isEmpty()) continue;
-                        JsonNode jsonNode = objectMapper.readTree(jsonChunk);
-                        if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
-                            String content = jsonNode.get("message").get("content").asText();
-                            fullResponse.append(content);
-                        }
-                    }
-                    
-                    String aiResponse = fullResponse.toString().trim().toUpperCase();
-                    return aiResponse.contains("VALID") && !aiResponse.contains("INVALID");
-                } catch (Exception e) {
-                    logger.error("Failed to parse validation response: {}", e.getMessage());
-                    // Fallback to basic validation if AI fails
-                    return TextValidator.isMeaningfulThought(thoughtText);
+            StringBuilder fullResponse = new StringBuilder();
+            for (String jsonChunk : response.getBody().split("\n")) {
+                if (jsonChunk.trim().isEmpty()) continue;
+                JsonNode jsonNode = objectMapper.readTree(jsonChunk);
+                if (jsonNode.has("message") && jsonNode.get("message").has("content")) {
+                    fullResponse.append(jsonNode.get("message").get("content").asText());
                 }
-            } else {
-                logger.error("Failed to get validation response: {}", response.getStatusCode());
-                // Fallback to basic validation if AI fails
-                return TextValidator.isMeaningfulThought(thoughtText);
             }
+
+            String raw = fullResponse.toString().trim();
+            // Strip markdown code fences if the model wrapped its response
+            if (raw.startsWith("```")) {
+                raw = raw.replaceAll("^```[a-z]*\\n?", "").replaceAll("```$", "").trim();
+            }
+
+            JsonNode result = objectMapper.readTree(raw);
+            boolean valid = result.path("valid").asBoolean(true);
+            String categoryRaw = result.path("category").asText("").trim();
+
+            // Match to a known category (exact then loose)
+            String matchedCategory = null;
+            for (Category c : Category.values()) {
+                if (c.getDisplayName().equalsIgnoreCase(categoryRaw)) {
+                    matchedCategory = c.getDisplayName();
+                    break;
+                }
+            }
+            if (matchedCategory == null) {
+                for (Category c : Category.values()) {
+                    if (categoryRaw.toLowerCase().contains(c.getDisplayName().toLowerCase())) {
+                        matchedCategory = c.getDisplayName();
+                        break;
+                    }
+                }
+            }
+
+            return new ClassificationResult(valid, matchedCategory);
         } catch (Exception e) {
-            logger.error("Error during AI validation, falling back to basic validation: {}", e.getMessage());
-            // Fallback to basic validation if AI service is unavailable
-            return TextValidator.isMeaningfulThought(thoughtText);
+            logger.warn("validateAndCategorize failed: {}", e.getMessage());
+            return null;
         }
     }
 

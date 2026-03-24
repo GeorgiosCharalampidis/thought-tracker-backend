@@ -104,6 +104,7 @@ function InsightsPanel({ open, onClose, notes, isDarkMode, communityMood, commun
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      disableScrollLock
       slotProps={{ backdrop: { sx: { backdropFilter: 'blur(6px) brightness(0.45)', backgroundColor: 'rgba(0,0,0,0.55)' } } }}
       PaperProps={{
         sx: {

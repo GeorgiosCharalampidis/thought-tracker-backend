@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Box, Button, Card, CardContent, CircularProgress, Collapse, Fade, IconButton, Tooltip, Typography } from '@mui/material';
-import { Bookmark as BookmarkFilledIcon, BookmarkBorder as BookmarkIcon, ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
+import { Bookmark as BookmarkFilledIcon, BookmarkBorder as BookmarkIcon, Edit as EditIcon, ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { DailyPrompt, AuthUser, PromptAnswerResponse } from '../types';
 import PromptAnswerComments from './PromptAnswerComments';
@@ -10,7 +10,9 @@ interface DailyPromptCardProps {
   currentUser: AuthUser;
   isDarkMode: boolean;
   isMobile: boolean;
+  isToday: boolean;
   onSubmitAnswer: (answerText: string) => Promise<void>;
+  onEditAnswer: (answerText: string) => Promise<void>;
   onLoadAnswers: () => Promise<PromptAnswerResponse[]>;
 }
 
@@ -18,13 +20,18 @@ function DailyPromptCard({
   prompt,
   currentUser,
   isDarkMode,
+  isToday,
   onSubmitAnswer,
+  onEditAnswer,
   onLoadAnswers,
 }: DailyPromptCardProps) {
   const answered = !!prompt.userAnswerText;
   const [inputOpen, setInputOpen] = useState(false);
   const [answerInput, setAnswerInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
   const [othersOpen, setOthersOpen] = useState(false);
   const [otherAnswers, setOtherAnswers] = useState<PromptAnswerResponse[]>([]);
   const [answersLoading, setAnswersLoading] = useState(false);
@@ -73,6 +80,22 @@ function DailyPromptCard({
     if (answered) return;
     setInputOpen((p) => !p);
     if (!inputOpen) setTimeout(() => textareaRef.current?.focus(), 150);
+  };
+
+  const handleStartEdit = () => {
+    setEditDraft(prompt.userAnswerText ?? '');
+    setEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editDraft.trim() || editDraft.trim() === prompt.userAnswerText) { setEditing(false); return; }
+    setEditSaving(true);
+    try {
+      await onEditAnswer(editDraft.trim());
+      setEditing(false);
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const handleToggleSave = async () => {
@@ -151,7 +174,7 @@ function DailyPromptCard({
 
           {/* Unanswered: inline plain textarea */}
           {!answered && (
-            <Collapse in={inputOpen}>
+            <Fade in={inputOpen} unmountOnExit>
               <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                 <textarea
                   ref={textareaRef}
@@ -202,15 +225,57 @@ function DailyPromptCard({
                   {submitting ? <CircularProgress size={12} sx={{ color: '#ffffff' }} /> : 'Share'}
                 </Button>
               </Box>
-            </Collapse>
+            </Fade>
           )}
 
           {/* Answered: show user's answer + toggle others */}
           {answered && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontSize: '0.95rem', color: textMuted, textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
-                {prompt.userAnswerText}
-              </Typography>
+              {editing ? (
+                <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <textarea
+                    value={editDraft}
+                    onChange={(e) => setEditDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setEditing(false);
+                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSaveEdit(); }
+                    }}
+                    maxLength={500}
+                    rows={3}
+                    autoFocus
+                    style={{
+                      width: '100%', resize: 'none', background: 'transparent', border: 'none',
+                      boxShadow: 'none', outline: 'none', color: textPrimary, fontSize: '0.95rem',
+                      lineHeight: '1.6', fontFamily: 'inherit', padding: '4px 0 8px', textAlign: 'center',
+                      fontStyle: 'italic',
+                    }}
+                  />
+                  <Box display="flex" gap={1}>
+                    <Button size="small" onClick={() => void handleSaveEdit()} disabled={editSaving || !editDraft.trim()}
+                      sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: 999, px: 2, py: 0.4, color: '#ffffff', backgroundColor: '#667eea', minWidth: 0, '&:hover': { backgroundColor: '#5a67d8' }, '&:disabled': { opacity: 0.4, color: '#ffffff', backgroundColor: '#667eea' } }}>
+                      {editSaving ? <CircularProgress size={12} sx={{ color: '#ffffff' }} /> : 'Save'}
+                    </Button>
+                    <Button size="small" onClick={() => setEditing(false)} disabled={editSaving}
+                      sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: 999, px: 2, py: 0.4, color: textMuted, minWidth: 0 }}>
+                      Cancel
+                    </Button>
+                  </Box>
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
+                  <Typography sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
+                    {prompt.userAnswerText}
+                  </Typography>
+                  {isToday && (
+                    <Tooltip title="Edit answer" placement="top">
+                      <IconButton size="small" onClick={handleStartEdit}
+                        sx={{ p: 0.3, color: textMuted, flexShrink: 0, '&:hover': { color: '#667eea' } }}>
+                        <EditIcon sx={{ fontSize: '0.85rem' }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              )}
 
               <Button
                 size="small"
