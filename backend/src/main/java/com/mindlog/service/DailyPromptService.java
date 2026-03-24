@@ -161,6 +161,16 @@ public class DailyPromptService {
                 .toList();
     }
 
+    public void updateAnswer(Long userId, int promptIndex, String newText) {
+        if (newText == null || newText.isBlank()) throw new BadCredentialsException("Answer cannot be empty");
+        String trimmed = newText.trim();
+        if (trimmed.length() > 500) throw new BadCredentialsException("Answer must be 500 characters or fewer");
+        PromptAnswer answer = promptAnswerRepository.findByUserIdAndPromptIndex(userId, promptIndex)
+                .orElseThrow(() -> new BadCredentialsException("No answer found for this prompt"));
+        answer.setAnswerText(trimmed);
+        promptAnswerRepository.save(answer);
+    }
+
     public List<AnsweredPromptSummary> getMyAnsweredPrompts(Long userId) {
         List<PromptAnswer> myAnswers = promptAnswerRepository.findByUserId(userId);
         return myAnswers.stream()
