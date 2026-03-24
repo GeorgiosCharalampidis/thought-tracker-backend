@@ -58,6 +58,10 @@ public class ResonanceService {
         return resonanceRepository.findByNote_User_IdOrderByCreatedAtDesc(userId);
     }
 
+    public List<Resonance> getUnseenResonancesForUser(Long userId) {
+        return resonanceRepository.findByNote_User_IdAndSeenFalseOrderByCreatedAtDesc(userId);
+    }
+
     public List<ResonanceSnippetResponse> getResonancesForNote(Long noteId, Long requestingUserId) {
         return resonanceRepository.findByNote_IdOrderByCreatedAtDesc(noteId)
                 .stream()

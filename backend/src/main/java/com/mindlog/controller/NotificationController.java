@@ -29,6 +29,12 @@ public class NotificationController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping
+    public ResponseEntity<Void> clearAll(Authentication authentication) {
+        notificationService.markAllSeen(authentication);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/mark-seen")
     public ResponseEntity<Void> markOneSeen(
             @PathVariable Long id,

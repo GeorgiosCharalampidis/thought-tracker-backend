@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
+  Button,
   IconButton,
   Popover,
   Tooltip,
@@ -59,13 +60,23 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
 
   const handleClose = () => setAnchorEl(null);
 
+  const handleClearAll = async () => {
+    const prev = notifications;
+    setNotifications([]);
+    try {
+      await axios.delete('/api/notifications');
+    } catch {
+      setNotifications(prev);
+    }
+  };
+
   const handleItemClick = async (n: Notification) => {
     if (!n.seen) {
+      setNotifications(prev =>
+        prev.map(item => item.type === n.type && item.id === n.id ? { ...item, seen: true } : item)
+      );
       try {
         await axios.post(`/api/notifications/${n.id}/mark-seen?type=${n.type}`);
-        setNotifications(prev =>
-          prev.map(item => item.type === n.type && item.id === n.id ? { ...item, seen: true } : item)
-        );
       } catch {
         // Badge will correct itself on next poll
       }
@@ -142,20 +153,40 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
             border: `1px solid ${borderColor}`,
             borderRadius: 2,
             boxShadow: isDarkMode ? '0 8px 24px rgba(0,0,0,0.5)' : '0 8px 24px rgba(0,0,0,0.10)',
+            '&::-webkit-scrollbar': { width: 4 },
+            '&::-webkit-scrollbar-track': { background: 'transparent' },
+            '&::-webkit-scrollbar-thumb': {
+              background: isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(15,23,42,0.12)',
+              borderRadius: 4,
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              background: isDarkMode ? 'rgba(255,255,255,0.22)' : 'rgba(15,23,42,0.22)',
+            },
           },
         }}
       >
-        <Box px={2} pt={2} pb={1}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: textColor, mb: 0.5 }}>
-            Notifications
-          </Typography>
-        </Box>
-
-        {notifications.length === 0 && (
-          <Box px={2} pb={2.5}>
+        {notifications.length === 0 ? (
+          <Box px={2} py={2}>
             <Typography variant="body2" sx={{ color: mutedColor }}>
               You're all caught up.
             </Typography>
+          </Box>
+        ) : (
+          <Box px={2} pt={1.5} pb={1} display="flex" justifyContent="flex-end">
+            <Button
+              size="small"
+              onClick={handleClearAll}
+              sx={{
+                textTransform: 'none',
+                fontSize: '0.75rem',
+                color: mutedColor,
+                minWidth: 0,
+                px: 0,
+                '&:hover': { backgroundColor: 'transparent', color: textColor },
+              }}
+            >
+              Clear all
+            </Button>
           </Box>
         )}
 
@@ -180,11 +211,7 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
                 variant="caption"
                 sx={{
                   fontWeight: n.seen ? 400 : 700,
-                  color: n.seen
-                    ? seenTextColor
-                    : n.type === 'RESONANCE'
-                      ? resonanceAccent
-                      : (isDarkMode ? '#a5b4fc' : '#4f46e5'),
+                  color: n.seen ? seenTextColor : n.type === 'RESONANCE' ? resonanceAccent : (isDarkMode ? '#a5b4fc' : '#4f46e5'),
                 }}
               >
                 {n.type === 'RESONANCE' ? 'Resonance' : n.actorUsername}

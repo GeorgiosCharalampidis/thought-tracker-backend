@@ -18,10 +18,13 @@ interface PromptAnswerCommentsProps {
   initialCount: number;
   currentUser: AuthUser | null;
   isDarkMode: boolean;
+  open?: boolean;
+  onToggle?: () => void;
 }
 
-function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode }: PromptAnswerCommentsProps) {
-  const [open, setOpen] = useState(false);
+function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode, open: openProp, onToggle }: PromptAnswerCommentsProps) {
+  const [openInternal, setOpenInternal] = useState(false);
+  const open = onToggle !== undefined ? (openProp ?? false) : openInternal;
   const [comments, setComments] = useState<Comment[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -50,7 +53,7 @@ function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode 
     loadComments();
   }, [loadComments]);
 
-  const handleToggle = () => setOpen(prev => !prev);
+  const handleToggle = onToggle ?? (() => setOpenInternal(prev => !prev));
 
   const handleSubmit = async () => {
     const text = draftText.trim();
@@ -86,17 +89,17 @@ function PromptAnswerComments({ answerId, initialCount, currentUser, isDarkMode 
 
   return (
     <Box mt={1} pt={0.5}>
-      {!open && (
+      {onToggle === undefined && (
         <Box
           display="flex"
           alignItems="center"
           gap={0.5}
           sx={{ cursor: 'pointer', width: 'fit-content' }}
-          onClick={() => setOpen(true)}
+          onClick={handleToggle}
         >
           <ChatBubbleOutlineIcon sx={{ fontSize: '0.95rem', color: mutedColor }} />
           <Typography variant="caption" sx={{ color: mutedColor, userSelect: 'none' }}>
-            {count === 0 ? 'Add a comment' : `${count} comment${count === 1 ? '' : 's'}`}
+            {open ? 'Hide comments' : count === 0 ? 'Add a comment' : `${count} comment${count === 1 ? '' : 's'}`}
           </Typography>
         </Box>
       )}

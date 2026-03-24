@@ -103,8 +103,10 @@ public class DailyPromptService {
         String question = PROMPTS.get(index);
         Optional<PromptAnswer> existing = promptAnswerRepository.findByUserIdAndPromptIndex(userId, index);
         String userAnswerText = existing.map(PromptAnswer::getAnswerText).orElse(null);
+        Long userAnswerId = existing.map(PromptAnswer::getId).orElse(null);
+        int userAnswerCommentCount = userAnswerId != null ? promptAnswerCommentRepository.countByAnswerId(userAnswerId) : 0;
         boolean saved = existing.map(PromptAnswer::isSaved).orElse(false);
-        return new DailyPromptDto(index, question, userAnswerText, saved);
+        return new DailyPromptDto(index, question, userAnswerText, userAnswerId, userAnswerCommentCount, saved);
     }
 
     public void savePrompt(Long userId, int promptIndex) {
@@ -194,7 +196,8 @@ public class DailyPromptService {
                                 );
                             })
                             .toList();
-                    return new AnsweredPromptSummary(index, question, myAnswer.getAnswerText(), allAnswers);
+                    int myCommentCount = promptAnswerCommentRepository.countByAnswerId(myAnswer.getId());
+                    return new AnsweredPromptSummary(index, question, myAnswer.getAnswerText(), myAnswer.getId(), myCommentCount, allAnswers);
                 })
                 .toList();
     }

@@ -200,7 +200,7 @@ public class NoteService {
     private SimilarThoughtsResponse buildSimilarThoughtsResponse(Note referenceNote) {
         String category = referenceNote.getCategory();
         if (category == null || category.isEmpty()) {
-            category = Category.OPEN_REFLECTIONS.getDisplayName();
+            category = Category.DAILY_LIFE_OBSERVATIONS.getDisplayName();
             referenceNote.setCategory(category);
         }
         logger.info("Fetching notes with category: {}", category);
@@ -343,7 +343,7 @@ public class NoteService {
                 ScoredMatch bestThemeMatch = findBestMatchingTheme(noteEmbedding, Category.allLabels(), themeEmbeddings);
                 bestTheme = bestThemeMatch.isConfident(CATEGORY_CONFIDENCE_THRESHOLD, CATEGORY_CONFIDENCE_MARGIN)
                         ? bestThemeMatch.label()
-                        : Category.OPEN_REFLECTIONS.getDisplayName();
+                        : Category.DAILY_LIFE_OBSERVATIONS.getDisplayName();
             }
 
             note.setCategory(bestTheme);
@@ -352,7 +352,7 @@ public class NoteService {
     }
 
     private String findBestSubCategory(String parentCategory, float[] noteEmbedding) {
-        if (Category.OPEN_REFLECTIONS.getDisplayName().equals(parentCategory)) {
+        if (Category.DAILY_LIFE_OBSERVATIONS.getDisplayName().equals(parentCategory)) {
             return "General";
         }
 

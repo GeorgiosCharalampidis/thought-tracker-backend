@@ -6,5 +6,7 @@ public record AnsweredPromptSummary(
         int promptIndex,
         String question,
         String myAnswer,
+        Long myAnswerId,
+        int myAnswerCommentCount,
         List<PromptAnswerDto> allAnswers
 ) {}

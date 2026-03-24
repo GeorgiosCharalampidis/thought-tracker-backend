@@ -33,19 +33,19 @@ public enum SubCategory {
         "Learning new skills, professional training, competency development, certifications"),
 
     // Financial Stress & Anxiety sub-categories
-    MONEY_WORRIES("Money Worries", Category.FINANCIAL_STRESS_ANXIETY,
+    MONEY_WORRIES("Money Worries", Category.MONEY_FINANCES,
         "Financial anxiety, money stress, worried about finances, financial insecurity"),
-    DEBT_STRESS("Debt Stress", Category.FINANCIAL_STRESS_ANXIETY,
+    DEBT_STRESS("Debt Stress", Category.MONEY_FINANCES,
         "Debt burden, loan payments, credit card debt, financial obligations"),
-    BILL_STRUGGLES("Bill Payment Struggles", Category.FINANCIAL_STRESS_ANXIETY,
+    BILL_STRUGGLES("Bill Payment Struggles", Category.MONEY_FINANCES,
         "Can't pay bills, rent stress, utility bills, struggling with expenses"),
 
     // Financial Planning & Goals sub-categories
-    BUDGETING("Budgeting", Category.FINANCIAL_PLANNING_GOALS,
+    BUDGETING("Budgeting", Category.MONEY_FINANCES,
         "Creating budget, tracking expenses, managing money, financial planning"),
-    SAVING_GOALS("Saving Goals", Category.FINANCIAL_PLANNING_GOALS,
+    SAVING_GOALS("Saving Goals", Category.MONEY_FINANCES,
         "Saving money, building emergency fund, financial goals, investment planning"),
-    FINANCIAL_DECISIONS("Financial Decisions", Category.FINANCIAL_PLANNING_GOALS,
+    FINANCIAL_DECISIONS("Financial Decisions", Category.MONEY_FINANCES,
         "Making financial choices, investment decisions, spending decisions, money management"),
 
     // Romantic Relationships sub-categories
@@ -97,11 +97,11 @@ public enum SubCategory {
         "Feeling empty inside, numb, void, hollow, emotionally drained, nothing inside"),
 
     // Stress & Feeling Overwhelmed sub-categories
-    LIFE_OVERWHELM("Life Overwhelm", Category.STRESS_FEELING_OVERWHELMED,
+    LIFE_OVERWHELM("Life Overwhelm", Category.ANXIETY_OVERTHINKING,
         "Too much going on, life is overwhelming, can't handle everything, too much stress"),
-    MULTIPLE_PRESSURES("Multiple Pressures", Category.STRESS_FEELING_OVERWHELMED,
+    MULTIPLE_PRESSURES("Multiple Pressures", Category.ANXIETY_OVERTHINKING,
         "Pressure from different areas, pulled in many directions, competing demands, stretched thin"),
-    STRESS_SYMPTOMS("Stress Symptoms", Category.STRESS_FEELING_OVERWHELMED,
+    STRESS_SYMPTOMS("Stress Symptoms", Category.ANXIETY_OVERTHINKING,
         "Physical stress symptoms, stress affecting body, tension, stress-related issues"),
 
     // Self-Esteem & Self-Worth sub-categories
@@ -209,20 +209,20 @@ public enum SubCategory {
         "Love my home, comfortable living space, home as sanctuary"),
 
     // News & Political Events sub-categories
-    NEWS_STRESS("News Stress", Category.NEWS_POLITICAL_EVENTS,
+    NEWS_STRESS("News Stress", Category.ANXIETY_OVERTHINKING,
         "News anxiety, overwhelmed by current events, political stress, world events worry"),
-    POLITICAL_ENGAGEMENT("Political Engagement", Category.NEWS_POLITICAL_EVENTS,
+    POLITICAL_ENGAGEMENT("Political Engagement", Category.ANXIETY_OVERTHINKING,
         "Political involvement, civic engagement, political discussions, activism"),
-    SOCIAL_ISSUES("Social Issues", Category.NEWS_POLITICAL_EVENTS,
+    SOCIAL_ISSUES("Social Issues", Category.ANXIETY_OVERTHINKING,
         "Social justice, inequality concerns, societal problems, community issues"),
 
     // Technology & Digital Life sub-categories
-    DIGITAL_OVERWHELM("Digital Overwhelm", Category.TECHNOLOGY_DIGITAL_LIFE,
+    DIGITAL_OVERWHELM("Digital Overwhelm", Category.DAILY_LIFE_OBSERVATIONS,
         "Screen time, digital fatigue, technology stress, doomscrolling, social media draining, " +
         "internet addiction, can't stop scrolling"),
-    DIGITAL_DETOX("Digital Detox", Category.TECHNOLOGY_DIGITAL_LIFE,
+    DIGITAL_DETOX("Digital Detox", Category.DAILY_LIFE_OBSERVATIONS,
         "Want to disconnect, need break from technology, digital detox, unplugging"),
-    SOCIAL_MEDIA("Social Media", Category.TECHNOLOGY_DIGITAL_LIFE,
+    SOCIAL_MEDIA("Social Media", Category.DAILY_LIFE_OBSERVATIONS,
         "Social media stress, online interactions, digital socializing, internet behavior"),
 
     // Environment & Nature sub-categories
@@ -250,11 +250,11 @@ public enum SubCategory {
         "Thinking about life, life observations, general reflections, pondering"),
 
     // Open Reflections sub-categories
-    RANDOM_THOUGHTS("Random Thoughts", Category.OPEN_REFLECTIONS,
+    RANDOM_THOUGHTS("Random Thoughts", Category.DAILY_LIFE_OBSERVATIONS,
         "Random ideas, scattered thoughts, miscellaneous thinking, various topics"),
-    STREAM_CONSCIOUSNESS("Stream of Consciousness", Category.OPEN_REFLECTIONS,
+    STREAM_CONSCIOUSNESS("Stream of Consciousness", Category.DAILY_LIFE_OBSERVATIONS,
         "Stream of thoughts, unfiltered thinking, mental wandering, free-flowing ideas"),
-    GENERAL_MUSINGS("General Musings", Category.OPEN_REFLECTIONS,
+    GENERAL_MUSINGS("General Musings", Category.DAILY_LIFE_OBSERVATIONS,
         "General thoughts, pondering, wondering, casual reflections, thinking out loud");
 
     private final String label;

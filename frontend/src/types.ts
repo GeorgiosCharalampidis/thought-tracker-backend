@@ -64,6 +64,8 @@ export interface DailyPrompt {
   promptIndex: number;
   question: string;
   userAnswerText?: string;
+  userAnswerId?: number;
+  userAnswerCommentCount?: number;
   saved: boolean;
 }
 
@@ -78,6 +80,8 @@ export interface AnsweredPromptSummary {
   promptIndex: number;
   question: string;
   myAnswer: string;
+  myAnswerId: number;
+  myAnswerCommentCount: number;
   allAnswers: PromptAnswerResponse[];
 }
 

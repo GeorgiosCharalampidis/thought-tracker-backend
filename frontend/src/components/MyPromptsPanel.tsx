@@ -10,11 +10,13 @@ import {
   DialogContent,
   Fade,
   IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import { Close as CloseIcon, People as PeopleIcon } from '@mui/icons-material';
+import { ChatBubbleOutline as CommentIcon, Close as CloseIcon, People as PeopleIcon } from '@mui/icons-material';
 import { AnsweredPromptSummary, AuthUser } from '../types';
 import PromptAnswerComments from './PromptAnswerComments';
+
 
 interface MyPromptsPanelProps {
   open: boolean;
@@ -27,6 +29,7 @@ interface MyPromptsPanelProps {
 
 function MyPromptsPanel({ open, onClose, prompts, loading, currentUser, isDarkMode }: MyPromptsPanelProps) {
   const [expandedPrompts, setExpandedPrompts] = useState<Set<number>>(new Set());
+  const [commentsOpenMap, setCommentsOpenMap] = useState<Record<number, boolean>>({});
 
   const toggleOthers = (promptIndex: number) => {
     setExpandedPrompts(prev => {
@@ -119,17 +122,42 @@ function MyPromptsPanel({ open, onClose, prompts, loading, currentUser, isDarkMo
                     </Typography>
 
                     {/* My answer */}
-                    <Typography
-                      sx={{
-                        fontSize: '0.95rem',
-                        color: isDarkMode ? '#94a3b8' : '#475569',
-                        fontStyle: 'italic',
-                        lineHeight: 1.6,
-                        mb: item.allAnswers.length > 0 ? 2 : 0,
-                      }}
-                    >
-                      {item.myAnswer}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', mb: item.allAnswers.length > 0 ? 2 : 0 }}>
+                      <Typography
+                        sx={{
+                          flex: 1,
+                          fontSize: '0.95rem',
+                          color: isDarkMode ? '#94a3b8' : '#475569',
+                          fontStyle: 'italic',
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {item.myAnswer}
+                      </Typography>
+                      <Tooltip title={commentsOpenMap[item.promptIndex] ? 'Hide comments' : 'Comments'} placement="top">
+                        <Box
+                          display="flex" alignItems="center" gap={0.25}
+                          onClick={() => setCommentsOpenMap(prev => ({ ...prev, [item.promptIndex]: !prev[item.promptIndex] }))}
+                          sx={{ cursor: 'pointer', color: commentsOpenMap[item.promptIndex] ? '#667eea' : textMuted, flexShrink: 0, '&:hover': { color: '#667eea' } }}
+                        >
+                          <CommentIcon sx={{ fontSize: '0.85rem' }} />
+                          {item.myAnswerCommentCount > 0 && (
+                            <Typography sx={{ fontSize: '0.72rem', lineHeight: 1, userSelect: 'none' }}>
+                              {item.myAnswerCommentCount}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    </Box>
+
+                    <PromptAnswerComments
+                      answerId={item.myAnswerId}
+                      initialCount={item.myAnswerCommentCount}
+                      currentUser={currentUser}
+                      isDarkMode={isDarkMode}
+                      open={commentsOpenMap[item.promptIndex] ?? false}
+                      onToggle={() => setCommentsOpenMap(prev => ({ ...prev, [item.promptIndex]: !prev[item.promptIndex] }))}
+                    />
 
                     {/* Others' answers */}
                     {item.allAnswers.length > 0 && (

@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Box, Button, Card, CardContent, CircularProgress, Collapse, Fade, IconButton, Tooltip, Typography } from '@mui/material';
-import { Bookmark as BookmarkFilledIcon, BookmarkBorder as BookmarkIcon, Edit as EditIcon, ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
+import { Bookmark as BookmarkFilledIcon, BookmarkBorder as BookmarkIcon, ChatBubbleOutline as CommentIcon, Edit as EditIcon, ExpandMore as ChevronIcon, PeopleOutline as PeopleIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { DailyPrompt, AuthUser, PromptAnswerResponse } from '../types';
 import PromptAnswerComments from './PromptAnswerComments';
@@ -32,6 +32,7 @@ function DailyPromptCard({
   const [editing, setEditing] = useState(false);
   const [editDraft, setEditDraft] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [othersOpen, setOthersOpen] = useState(false);
   const [otherAnswers, setOtherAnswers] = useState<PromptAnswerResponse[]>([]);
   const [answersLoading, setAnswersLoading] = useState(false);
@@ -262,8 +263,8 @@ function DailyPromptCard({
                   </Box>
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%' }}>
+                  <Typography sx={{ flex: 1, fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
                     {prompt.userAnswerText}
                   </Typography>
                   {isToday && (
@@ -274,6 +275,35 @@ function DailyPromptCard({
                       </IconButton>
                     </Tooltip>
                   )}
+                  {prompt.userAnswerId && (
+                    <Tooltip title={commentsOpen ? 'Hide comments' : 'Comments'} placement="top">
+                      <Box
+                        display="flex" alignItems="center" gap={0.25}
+                        onClick={() => setCommentsOpen(p => !p)}
+                        sx={{ cursor: 'pointer', color: commentsOpen ? '#667eea' : textMuted, flexShrink: 0, '&:hover': { color: '#667eea' } }}
+                      >
+                        <CommentIcon sx={{ fontSize: '0.85rem' }} />
+                        {(prompt.userAnswerCommentCount ?? 0) > 0 && (
+                          <Typography sx={{ fontSize: '0.72rem', lineHeight: 1, userSelect: 'none' }}>
+                            {prompt.userAnswerCommentCount}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Tooltip>
+                  )}
+                </Box>
+              )}
+
+              {prompt.userAnswerId && (
+                <Box sx={{ width: '100%' }}>
+                  <PromptAnswerComments
+                    answerId={prompt.userAnswerId}
+                    initialCount={prompt.userAnswerCommentCount ?? 0}
+                    currentUser={currentUser}
+                    isDarkMode={isDarkMode}
+                    open={commentsOpen}
+                    onToggle={() => setCommentsOpen(p => !p)}
+                  />
                 </Box>
               )}
 

@@ -12,6 +12,8 @@ public interface ResonanceRepository extends JpaRepository<Resonance, Long> {
 
     List<Resonance> findByNote_User_IdOrderByCreatedAtDesc(Long userId);
 
+    List<Resonance> findByNote_User_IdAndSeenFalseOrderByCreatedAtDesc(Long userId);
+
     List<Resonance> findByNote_IdOrderByCreatedAtDesc(Long noteId);
 
     boolean existsByNote_IdAndResonatingNote_Id(Long noteId, Long resonatingNoteId);
