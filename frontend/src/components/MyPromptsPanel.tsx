@@ -122,10 +122,10 @@ function MyPromptsPanel({ open, onClose, prompts, loading, currentUser, isDarkMo
                     </Typography>
 
                     {/* My answer */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', mb: item.allAnswers.length > 0 ? 2 : 0 }}>
+                    <Box sx={{ lineHeight: 1.6, mb: item.allAnswers.length > 0 ? 2 : 0 }}>
                       <Typography
+                        component="span"
                         sx={{
-                          flex: 1,
                           fontSize: '0.95rem',
                           color: isDarkMode ? '#94a3b8' : '#475569',
                           fontStyle: 'italic',
@@ -134,20 +134,19 @@ function MyPromptsPanel({ open, onClose, prompts, loading, currentUser, isDarkMo
                       >
                         {item.myAnswer}
                       </Typography>
-                      <Tooltip title={commentsOpenMap[item.promptIndex] ? 'Hide comments' : 'Comments'} placement="top">
                         <Box
-                          display="flex" alignItems="center" gap={0.25}
+                          component="span"
+                          display="inline-flex" alignItems="center" gap={0.25}
                           onClick={() => setCommentsOpenMap(prev => ({ ...prev, [item.promptIndex]: !prev[item.promptIndex] }))}
-                          sx={{ cursor: 'pointer', color: commentsOpenMap[item.promptIndex] ? '#667eea' : textMuted, flexShrink: 0, '&:hover': { color: '#667eea' } }}
+                          sx={{ cursor: 'pointer', ml: 1.5, px: 0.5, py: 0.4, color: commentsOpenMap[item.promptIndex] ? '#667eea' : (isDarkMode ? '#94a3b8' : '#64748b'), verticalAlign: 'middle', borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}
                         >
-                          <CommentIcon sx={{ fontSize: '0.85rem' }} />
+                          <CommentIcon sx={{ fontSize: '1rem' }} />
                           {item.myAnswerCommentCount > 0 && (
-                            <Typography sx={{ fontSize: '0.72rem', lineHeight: 1, userSelect: 'none' }}>
+                            <Typography component="span" sx={{ fontSize: '0.72rem', lineHeight: 1, userSelect: 'none' }}>
                               {item.myAnswerCommentCount}
                             </Typography>
                           )}
                         </Box>
-                      </Tooltip>
                     </Box>
 
                     <PromptAnswerComments

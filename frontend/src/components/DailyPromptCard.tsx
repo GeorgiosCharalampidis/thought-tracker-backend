@@ -277,33 +277,30 @@ function DailyPromptCard({
                   </Box>
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%' }}>
-                  <Typography sx={{ flex: 1, fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic' }}>
+                <Box sx={{ textAlign: 'center', lineHeight: 1.6 }}>
+                  <Typography component="span" sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', lineHeight: 1.6, fontStyle: 'italic' }}>
                     {prompt.userAnswerText}
                   </Typography>
                   {isToday && (
-                    <Tooltip title="Edit answer" placement="top">
-                      <IconButton size="small" onClick={handleStartEdit}
-                        sx={{ p: 0.3, color: textMuted, flexShrink: 0, '&:hover': { color: '#667eea' } }}>
-                        <EditIcon sx={{ fontSize: '0.85rem' }} />
-                      </IconButton>
-                    </Tooltip>
+                    <IconButton component="span" size="small" onClick={handleStartEdit}
+                      sx={{ p: 0.4, ml: 1.5, color: isDarkMode ? '#94a3b8' : '#64748b', verticalAlign: 'middle', borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}>
+                      <EditIcon sx={{ fontSize: '1rem' }} />
+                    </IconButton>
                   )}
                   {prompt.userAnswerId && (
-                    <Tooltip title={commentsOpen ? 'Hide comments' : 'Comments'} placement="top">
-                      <Box
-                        display="flex" alignItems="center" gap={0.25}
-                        onClick={() => setCommentsOpen(p => !p)}
-                        sx={{ cursor: 'pointer', color: commentsOpen ? '#667eea' : textMuted, flexShrink: 0, '&:hover': { color: '#667eea' } }}
-                      >
-                        <CommentIcon sx={{ fontSize: '0.85rem' }} />
-                        {(prompt.userAnswerCommentCount ?? 0) > 0 && (
-                          <Typography sx={{ fontSize: '0.72rem', lineHeight: 1, userSelect: 'none' }}>
-                            {prompt.userAnswerCommentCount}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Tooltip>
+                    <Box
+                      component="span"
+                      display="inline-flex" alignItems="center" gap={0.25}
+                      onClick={() => setCommentsOpen(p => !p)}
+                      sx={{ cursor: 'pointer', ml: 0.5, px: 0.5, py: 0.4, color: commentsOpen ? '#667eea' : (isDarkMode ? '#94a3b8' : '#64748b'), verticalAlign: 'middle', borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}
+                    >
+                      <CommentIcon sx={{ fontSize: '1rem' }} />
+                      {(prompt.userAnswerCommentCount ?? 0) > 0 && (
+                        <Typography component="span" sx={{ fontSize: '0.72rem', lineHeight: 1, userSelect: 'none' }}>
+                          {prompt.userAnswerCommentCount}
+                        </Typography>
+                      )}
+                    </Box>
                   )}
                 </Box>
               )}

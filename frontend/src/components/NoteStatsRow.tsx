@@ -128,23 +128,21 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
     <Box mt={1} pt={0}>
       {/* Icon row */}
       <Box display="flex" alignItems="center" gap={1.5}>
-        {!commentsOpen && (
-          <Box
-            display="flex" alignItems="center" gap={0.4}
-            onClick={() => setCommentsOpen(true)}
-            sx={{
-              cursor: 'pointer',
-              color: mutedColor,
-              '&:hover': { color: mutedColor },
-              '& svg': { transition: 'none' },
-            }}
-          >
-            <ChatBubbleOutlineIcon sx={{ fontSize: '0.85rem', color: 'inherit' }} />
-            <Typography variant="caption" sx={{ color: 'inherit', lineHeight: 1, userSelect: 'none' }}>
-              {count > 0 ? `${count} comment${count === 1 ? '' : 's'}` : 'Add a comment'}
-            </Typography>
-          </Box>
-        )}
+        <Box
+          display="flex" alignItems="center" gap={0.4}
+          onClick={() => setCommentsOpen(o => !o)}
+          sx={{
+            cursor: 'pointer',
+            color: commentsOpen ? commentActiveColor : mutedColor,
+            '&:hover': { color: commentsOpen ? commentActiveColor : mutedColor },
+            '& svg': { transition: 'none' },
+          }}
+        >
+          <ChatBubbleOutlineIcon sx={{ fontSize: '0.85rem', color: 'inherit' }} />
+          <Typography variant="caption" sx={{ color: 'inherit', lineHeight: 1, userSelect: 'none' }}>
+            {count > 0 ? `${count} comment${count === 1 ? '' : 's'}` : 'Add a comment'}
+          </Typography>
+        </Box>
 
         {resonancesLoaded && resonanceCount > 0 && (
           <Box
