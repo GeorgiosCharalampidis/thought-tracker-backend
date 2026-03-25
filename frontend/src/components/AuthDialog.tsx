@@ -15,10 +15,12 @@ interface AuthDialogProps {
     password: string;
   };
   isDarkMode: boolean;
+  pendingVerificationEmail: string;
   onClose: () => void;
   onExited: () => void;
   onSubmit: () => void;
   onChange: (field: 'identifier' | 'username' | 'email' | 'password', value: string) => void;
+  onResendVerification: () => void;
 }
 
 function AuthDialog({
@@ -29,10 +31,12 @@ function AuthDialog({
   authSubmitting,
   authForm,
   isDarkMode,
+  pendingVerificationEmail,
   onClose,
   onExited,
   onSubmit,
   onChange,
+  onResendVerification,
 }: AuthDialogProps) {
 
   const textFieldSx = {
@@ -87,124 +91,164 @@ function AuthDialog({
           variant="h6"
           sx={{ fontWeight: 500, fontSize: '1.6rem', mb: 0.75 }}
         >
-          {authMode === 'login' ? (
-            <>
-              <Box component="span" sx={{ color: isDarkMode ? '#f8fafc' : '#111827' }}>Log in</Box>
-            </>
-          ) : (
-            <Box component="span" sx={{ color: isDarkMode ? '#f8fafc' : '#111827' }}>Sign up for free</Box>
-          )}
+          <Box component="span" sx={{ color: isDarkMode ? '#f8fafc' : '#111827' }}>
+            {authMode === 'verify-pending' ? 'Check your email' : authMode === 'login' ? 'Log in' : 'Sign up for free'}
+          </Box>
         </Typography>
 
         <Typography
           variant="body2"
           sx={{ color: isDarkMode ? '#9ca3af' : '#6b7280', mb: 2, lineHeight: 1.6 }}
         >
-          {authMode === 'login'
-            ? 'Log in to save thoughts and get reflections.'
-            : 'Create an account to save thoughts and get reflections.'}
+          {authMode === 'verify-pending'
+            ? <>We sent a verification link to <strong>{pendingVerificationEmail}</strong>. Click it to activate your account.</>
+            : authMode === 'login'
+              ? (authPromptMessage || 'Log in to save thoughts and get reflections.')
+              : 'Create an account to save thoughts and get reflections.'}
         </Typography>
 
-        <Box display="flex" flexDirection="column" gap={1.25}>
-          {authMode === 'register' && (
-            <TextField
-              fullWidth
-              placeholder="Username"
-              value={authForm.username}
-              onChange={(event) => onChange('username', event.target.value)}
-              sx={textFieldSx}
-            />
-          )}
-
-          {authMode === 'register' && (
-            <TextField
-              fullWidth
-              placeholder="Email"
-              type="email"
-              value={authForm.email}
-              onChange={(event) => onChange('email', event.target.value)}
-              sx={textFieldSx}
-            />
-          )}
-
-          {authMode === 'login' && (
-            <TextField
-              fullWidth
-              placeholder="Username or email"
-              value={authForm.identifier}
-              onChange={(event) => onChange('identifier', event.target.value)}
-              sx={textFieldSx}
-            />
-          )}
-
-          <TextField
-            fullWidth
-            placeholder="Password"
-            type="password"
-            value={authForm.password}
-            onChange={(event) => onChange('password', event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                onSubmit();
-              }
-            }}
-            sx={textFieldSx}
-          />
-
-          {authError && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: isDarkMode ? '#fca5a5' : '#b91c1c',
-                textAlign: 'left',
-                px: 0.25,
-              }}
-            >
-              {authError}
+        {authMode === 'verify-pending' ? (
+          <Box display="flex" flexDirection="column" gap={1.25}>
+            {authError && (
+              <Typography variant="body2" sx={{ color: isDarkMode ? '#fca5a5' : '#b91c1c', px: 0.25 }}>
+                {authError}
+              </Typography>
+            )}
+            <Typography variant="body2" sx={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+              Didn't receive it?
             </Typography>
-          )}
-
-          <Box display="flex" gap={1} mt={1.5}>
-            <Button
-              variant="text"
-              onClick={onClose}
-              sx={{
-                flex: 1,
-                borderRadius: 999,
-                textTransform: 'none',
-                color: isDarkMode ? '#d1d5db' : '#4b5563',
-                '&:hover': {
-                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)',
-                },
-              }}
-            >
-              Not now
-            </Button>
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={onSubmit}
-              disabled={authSubmitting}
-              sx={{
-                flex: 1,
-                minHeight: 42,
-                borderRadius: 999,
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                color: isDarkMode ? '#111827' : '#f9fafb',
-                backgroundColor: isDarkMode ? '#f3f4f6' : '#111827',
-                '&:hover': {
-                  backgroundColor: isDarkMode ? '#e5e7eb' : '#1f2937',
-                },
-              }}
-            >
-              {authSubmitting ? (
-                <CircularProgress size={18} sx={{ color: isDarkMode ? '#111827' : '#f9fafb' }} />
-              ) : authMode === 'login' ? 'Continue' : 'Create account'}
-            </Button>
+            <Box display="flex" gap={1} mt={0.5}>
+              <Button
+                variant="text"
+                onClick={onClose}
+                sx={{
+                  flex: 1,
+                  borderRadius: 999,
+                  textTransform: 'none',
+                  color: isDarkMode ? '#d1d5db' : '#4b5563',
+                  '&:hover': { backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)' },
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={onResendVerification}
+                disabled={authSubmitting}
+                sx={{
+                  flex: 1,
+                  minHeight: 42,
+                  borderRadius: 999,
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  color: isDarkMode ? '#111827' : '#f9fafb',
+                  backgroundColor: isDarkMode ? '#f3f4f6' : '#111827',
+                  '&:hover': { backgroundColor: isDarkMode ? '#e5e7eb' : '#1f2937' },
+                }}
+              >
+                {authSubmitting ? <CircularProgress size={18} sx={{ color: isDarkMode ? '#111827' : '#f9fafb' }} /> : 'Resend email'}
+              </Button>
+            </Box>
           </Box>
-        </Box>
+        ) : (
+          <Box display="flex" flexDirection="column" gap={1.25}>
+            {authMode === 'register' && (
+              <TextField
+                fullWidth
+                placeholder="Username"
+                value={authForm.username}
+                onChange={(event) => onChange('username', event.target.value)}
+                sx={textFieldSx}
+              />
+            )}
+
+            {authMode === 'register' && (
+              <TextField
+                fullWidth
+                placeholder="Email"
+                type="email"
+                value={authForm.email}
+                onChange={(event) => onChange('email', event.target.value)}
+                sx={textFieldSx}
+              />
+            )}
+
+            {authMode === 'login' && (
+              <TextField
+                fullWidth
+                placeholder="Username or email"
+                value={authForm.identifier}
+                onChange={(event) => onChange('identifier', event.target.value)}
+                sx={textFieldSx}
+              />
+            )}
+
+            <TextField
+              fullWidth
+              placeholder="Password"
+              type="password"
+              value={authForm.password}
+              onChange={(event) => onChange('password', event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  onSubmit();
+                }
+              }}
+              sx={textFieldSx}
+            />
+
+            {authError && (
+              <Typography
+                variant="body2"
+                sx={{ color: isDarkMode ? '#fca5a5' : '#b91c1c', textAlign: 'left', px: 0.25 }}
+              >
+                {authError}
+              </Typography>
+            )}
+
+            <Box display="flex" gap={1} mt={1.5}>
+              <Button
+                variant="text"
+                onClick={onClose}
+                sx={{
+                  flex: 1,
+                  borderRadius: 999,
+                  textTransform: 'none',
+                  color: isDarkMode ? '#d1d5db' : '#4b5563',
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : 'rgba(15,23,42,0.04)',
+                  },
+                }}
+              >
+                Not now
+              </Button>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={onSubmit}
+                disabled={authSubmitting}
+                sx={{
+                  flex: 1,
+                  minHeight: 42,
+                  borderRadius: 999,
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  color: isDarkMode ? '#111827' : '#f9fafb',
+                  backgroundColor: isDarkMode ? '#f3f4f6' : '#111827',
+                  '&:hover': {
+                    backgroundColor: isDarkMode ? '#e5e7eb' : '#1f2937',
+                  },
+                }}
+              >
+                {authSubmitting ? (
+                  <CircularProgress size={18} sx={{ color: isDarkMode ? '#111827' : '#f9fafb' }} />
+                ) : authMode === 'login' ? 'Continue' : 'Create account'}
+              </Button>
+            </Box>
+          </Box>
+        )}
       </DialogContent>
     </Dialog>
   );

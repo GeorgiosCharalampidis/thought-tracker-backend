@@ -29,7 +29,6 @@ public class UserService {
     private final AiService aiService;
     private final PasswordEncoder passwordEncoder;
     private final AiServiceConfig config;
-
     public UserService(UserRepository userRepository, AiService aiService, PasswordEncoder passwordEncoder, AiServiceConfig config) {
         this.userRepository = userRepository;
         this.aiService = aiService;
@@ -51,13 +50,13 @@ public class UserService {
     }
 
     public User registerUser(RegisterRequest registerRequest) {
-        User user = new User(
-                normalizeUsername(registerRequest.getUsername()),
-                normalizeEmail(registerRequest.getEmail()),
-                registerRequest.getPassword(),
-                DEFAULT_AUTHORITY
-        );
-        return createUser(user);
+        String email = normalizeEmail(registerRequest.getEmail());
+        String username = normalizeUsername(registerRequest.getUsername());
+        validateUniqueUser(username, email);
+        User user = new User(username, email, registerRequest.getPassword(), DEFAULT_AUTHORITY);
+        user.validateCredentials();
+        user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        return userRepository.save(user);
     }
 
     public User getUserById(Long userId) {

@@ -49,6 +49,7 @@ import {
   OnThisDayResponse,
   PendingAction,
   PromptAnswerResponse,
+  RegisterResponse,
   SimilarThoughtsResponse,
 } from './types';
 
@@ -148,6 +149,7 @@ function App() {
   const [authPromptMessage, setAuthPromptMessage] = useState('');
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
   const [savedNotes, setSavedNotes] = useState<Note[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState('');
@@ -194,6 +196,8 @@ function App() {
     setPendingAction(null);
     setAuthPromptMessage('');
     setAuthError('');
+    setAuthMode('login');
+    setPendingVerificationEmail('');
   };
 
   const resetJournalState = () => {
@@ -256,6 +260,25 @@ function App() {
       setNotesLoading(false);
     }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      window.history.replaceState({}, '', '/');
+      axios.get(`/api/auth/verify-email?token=${token}`)
+        .then(() => {
+          setAuthMode('login');
+          setAuthPromptMessage('Your email has been verified! You can now log in.');
+          setAuthPromptOpen(true);
+        })
+        .catch((error) => {
+          setAuthMode('login');
+          setAuthError(getErrorMessage(error, 'Verification failed. The link may have expired.'));
+          setAuthPromptOpen(true);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -473,19 +496,24 @@ function App() {
     setAuthError('');
 
     try {
-      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const payload = authMode === 'login'
-        ? {
-            identifier: authForm.identifier,
-            password: authForm.password,
-          }
-        : {
-            username: authForm.username,
-            email: authForm.email,
-            password: authForm.password,
-          };
+      if (authMode === 'register') {
+        const response = await axios.post<RegisterResponse>('/api/auth/register', {
+          username: authForm.username,
+          email: authForm.email,
+          password: authForm.password,
+        });
+        if (response.data.message === 'VERIFICATION_SENT') {
+          setPendingVerificationEmail(response.data.email);
+          setAuthMode('verify-pending');
+          setAuthForm({ identifier: '', username: '', email: '', password: '' });
+        }
+        return;
+      }
 
-      const response = await axios.post<AuthResponse>(endpoint, payload);
+      const response = await axios.post<AuthResponse>('/api/auth/login', {
+        identifier: authForm.identifier,
+        password: authForm.password,
+      });
       const actionToResume = pendingAction;
       const authenticatedUser = response.data.user;
 
@@ -503,7 +531,25 @@ function App() {
       }
     } catch (error) {
       console.error(`Error during ${authMode}:`, error);
-      setAuthError(getErrorMessage(error, authMode === 'login' ? 'Login failed.' : 'Registration failed.'));
+      const message = getErrorMessage(error, authMode === 'login' ? 'Login failed.' : 'Registration failed.');
+      if (message.startsWith('EMAIL_NOT_VERIFIED:')) {
+        setPendingVerificationEmail(message.replace('EMAIL_NOT_VERIFIED:', ''));
+        setAuthMode('verify-pending');
+        return;
+      }
+      setAuthError(message);
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setAuthSubmitting(true);
+    setAuthError('');
+    try {
+      await axios.post('/api/auth/resend-verification', { email: pendingVerificationEmail });
+    } catch (error) {
+      setAuthError(getErrorMessage(error, 'Could not resend verification email.'));
     } finally {
       setAuthSubmitting(false);
     }
@@ -1138,6 +1184,8 @@ function App() {
           open={authPromptOpen}
           authMode={authMode}
           authPromptMessage={authPromptMessage}
+          pendingVerificationEmail={pendingVerificationEmail}
+          onResendVerification={handleResendVerification}
           authError={authError}
           authSubmitting={authSubmitting}
           authForm={authForm}

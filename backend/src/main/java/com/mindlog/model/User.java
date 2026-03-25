@@ -8,8 +8,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.List;
+import java.time.LocalDateTime;
+
 
 @Getter
 @Entity
@@ -48,13 +50,21 @@ public class User {
     @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'ROLE_USER'")
     private String authority;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<Note> notes;
+    @Setter
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean verified = false;
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false, columnDefinition = "timestamp default now()")
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private List<Comment> comments;
+    private java.util.List<Note> notes;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private java.util.List<Comment> comments;
 
     public User() {
     }

@@ -2,6 +2,7 @@ package com.mindlog.security;
 
 import com.mindlog.model.User;
 import com.mindlog.repository.UserRepository;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -25,6 +26,10 @@ public class MindlogUserDetailsService implements UserDetailsService {
         User user = userRepository.findByUsername(normalizedIdentifier)
                 .or(() -> userRepository.findByEmail(normalizedIdentifier.toLowerCase()))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!user.isVerified()) {
+            throw new DisabledException("EMAIL_NOT_VERIFIED:" + user.getEmail());
+        }
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
