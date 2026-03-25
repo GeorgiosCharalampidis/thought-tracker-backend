@@ -251,7 +251,7 @@ function SavedThoughtsSidebar({
           {!currentUser ? (
             <Box sx={{ px: 1.1, py: 0.2 }}>
               <Typography sx={{ fontSize: '0.86rem', color: isDarkMode ? '#cbd5e1' : '#475569', lineHeight: 1.6 }}>
-                Log in to browse your saved thoughts here.
+                Log in to browse your thoughts.
               </Typography>
             </Box>
           ) : notesLoading ? (

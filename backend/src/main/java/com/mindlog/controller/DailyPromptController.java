@@ -25,6 +25,11 @@ public class DailyPromptController {
         this.userService = userService;
     }
 
+    @GetMapping("/public")
+    public ResponseEntity<DailyPromptDto> getTodaysPromptPublic() {
+        return ResponseEntity.ok(dailyPromptService.getTodaysPromptPublic());
+    }
+
     @GetMapping
     public ResponseEntity<DailyPromptDto> getTodaysPrompt(Authentication authentication) {
         User user = userService.getAuthenticatedUser(authentication);

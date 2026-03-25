@@ -24,7 +24,6 @@ import {
   Logout as LogoutIcon,
   Menu as MenuIcon,
   MenuOpen as MenuOpenIcon,
-  TextFields as TextFieldsIcon,
 } from '@mui/icons-material';
 import axios from 'axios';
 import AiChatPanel from './components/AiChatPanel';
@@ -154,7 +153,6 @@ function App() {
   const [notesError, setNotesError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSidebarClosing, setIsSidebarClosing] = useState(false);
-  const [isAltHeading, setIsAltHeading] = useState(false);
   const [authForm, setAuthForm] = useState({
     identifier: '',
     username: '',
@@ -176,8 +174,8 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  // Rail has: menu, chat, insights (logged-in only), my prompts (logged-in only), dark mode — each 40px with 8px gaps, starting at top 18px
-  const railButtonCount = currentUser ? 5 : 3;
+  // Rail has: menu (hidden when open), chat, insights, my prompts, dark mode — each 40px with 8px gaps, starting at top 18px
+  const railButtonCount = 5;
   const sidebarHeaderHeight = 18 + railButtonCount * 40 + (railButtonCount - 1) * 8 + 20;
 
   const openAuthPrompt = (mode: AuthMode, action: PendingAction, message: string) => {
@@ -274,9 +272,10 @@ function App() {
     bootstrapAuth();
   }, []);
 
-  const loadDailyPrompt = async () => {
+  const loadDailyPrompt = async (authenticated: boolean) => {
     try {
-      const response = await axios.get<DailyPrompt>('/api/daily-prompt');
+      const url = authenticated ? '/api/daily-prompt' : '/api/daily-prompt/public';
+      const response = await axios.get<DailyPrompt>(url);
       setDailyPrompt(response.data);
     } catch (error) {
       console.error('Error loading daily prompt:', error);
@@ -342,13 +341,13 @@ function App() {
     if (currentUser) {
       setOnThisDayLoading(true);
       void loadNotes(currentUser.id);
-      void loadDailyPrompt();
+      void loadDailyPrompt(true);
       void loadOnThisDay(currentUser.id);
       return;
     }
 
+    void loadDailyPrompt(false);
     setSavedNotes([]);
-    setDailyPrompt(null);
     setOnThisDay(null);
     setOnThisDayLoading(false);
     setNotesError('');
@@ -553,16 +552,7 @@ function App() {
   };
 
   const handlePrimaryLeftAction = () => {
-    if (isSidebarOpen) {
-      // On mobile just close; on desktop toggle the heading
-      if (isMobile) {
-        closeSidebar();
-      } else {
-        setIsAltHeading((previous) => !previous);
-      }
-      return;
-    }
-    if (!isSidebarClosing) {
+    if (!isSidebarOpen && !isSidebarClosing) {
       openSidebar();
     }
   };
@@ -604,7 +594,7 @@ function App() {
   const sidebarVisible = isSidebarOpen || isSidebarClosing;
   // On mobile the sidebar overlays content — never push the main content
   const mainContentOffset = isMobile ? 0 : (isSidebarOpen ? 316 : 96);
-  const headingText = isAltHeading ? 'Pause and notice' : 'Share a thought';
+  const headingText = 'Share a thought';
   const thoughtPlaceholder = (currentUser || isMobile)
     ? 'Write a thought...'
     : 'Write a thought... sign in to save it.';
@@ -719,25 +709,26 @@ function App() {
             pointerEvents: 'none',
           }}
         >
-          <Tooltip title={isSidebarOpen ? 'Change heading' : 'Open sidebar'} placement="right">
+          <Tooltip title="Open sidebar" placement="right">
             <IconButton
               onClick={handlePrimaryLeftAction}
+              disableRipple
               sx={{
                 width: 40,
                 height: 40,
-                pointerEvents: isSidebarClosing ? 'none' : 'auto',
-                opacity: isSidebarClosing ? 0 : 1,
+                pointerEvents: isSidebarOpen || isSidebarClosing ? 'none' : 'auto',
+                opacity: isSidebarOpen || isSidebarClosing ? 0 : 1,
                 color: isDarkMode ? '#cbd5e1' : '#475569',
                 backgroundColor: 'transparent',
                 border: '1px solid transparent',
-                transition: 'opacity 0.14s ease, background-color 0.2s ease, border-color 0.2s ease',
+                transition: 'opacity 0.14s ease',
                 '&:hover': {
-                  backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
-                  borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
-                },
+                backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
+                borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
+              },
               }}
             >
-              {isSidebarOpen ? <TextFieldsIcon sx={{ fontSize: 18 }} /> : <MenuIcon sx={{ fontSize: 18 }} />}
+              <MenuIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
 
@@ -754,11 +745,11 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
-                width: 'fit-content',
+                width: isSidebarOpen ? `${sidebarWidth - 24}px` : 'fit-content',
                 height: 40,
                 pointerEvents: 'auto',
                 pl: 0,
-                pr: isSidebarOpen ? 0.9 : 0,
+                pr: isSidebarOpen ? 1 : 0,
                 py: 0,
                 borderRadius: 999,
                 cursor: 'pointer',
@@ -806,7 +797,7 @@ function App() {
             </Box>
           </Tooltip>
 
-          {currentUser && (
+          {(
             <Tooltip
               title="My Insights"
               placement="right"
@@ -815,16 +806,16 @@ function App() {
               disableTouchListener={sidebarVisible}
             >
               <Box
-                onClick={() => { setInsightsOpen(true); void loadCommunityMood(); }}
+                onClick={() => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your personal insights.'); return; } setInsightsOpen(true); void loadCommunityMood(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
-                  width: 'fit-content',
+                  width: isSidebarOpen ? `${sidebarWidth - 24}px` : 'fit-content',
                   height: 40,
                   pointerEvents: 'auto',
                   pl: 0,
-                  pr: isSidebarOpen ? 0.9 : 0,
+                  pr: isSidebarOpen ? 1 : 0,
                   py: 0,
                   borderRadius: 999,
                   cursor: 'pointer',
@@ -865,7 +856,7 @@ function App() {
             </Tooltip>
           )}
 
-          {currentUser && (
+          {(
             <Tooltip
               title="My Prompts"
               placement="right"
@@ -874,16 +865,16 @@ function App() {
               disableTouchListener={sidebarVisible}
             >
               <Box
-                onClick={() => { setMyPromptsOpen(true); void loadMyPrompts(); }}
+                onClick={() => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your saved prompts.'); return; } setMyPromptsOpen(true); void loadMyPrompts(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 1,
-                  width: 'fit-content',
+                  width: isSidebarOpen ? `${sidebarWidth - 24}px` : 'fit-content',
                   height: 40,
                   pointerEvents: 'auto',
                   pl: 0,
-                  pr: isSidebarOpen ? 0.9 : 0,
+                  pr: isSidebarOpen ? 1 : 0,
                   py: 0,
                   borderRadius: 999,
                   cursor: 'pointer',
@@ -924,25 +915,54 @@ function App() {
             </Tooltip>
           )}
 
-          <Tooltip title={isDarkMode ? 'Light mode' : 'Dark mode'} placement="right">
-            <IconButton
+          <Tooltip title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'} placement="right" disableHoverListener={sidebarVisible} disableFocusListener={sidebarVisible} disableTouchListener={sidebarVisible}>
+            <Box
               onClick={() => setIsDarkMode(!isDarkMode)}
               sx={{
-                width: 40,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                width: isSidebarOpen ? `${sidebarWidth - 24}px` : 'fit-content',
                 height: 40,
                 pointerEvents: 'auto',
-                color: isDarkMode ? '#cbd5e1' : '#475569',
+                pl: 0,
+                pr: isSidebarOpen ? 1 : 0,
+                py: 0,
+                borderRadius: 999,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease, opacity 0.14s ease',
                 backgroundColor: 'transparent',
-                border: '1px solid transparent',
-                transition: 'background-color 0.2s ease, border-color 0.2s ease',
                 '&:hover': {
+                  backgroundColor: isSidebarOpen
+                    ? (isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)')
+                    : 'transparent',
+                },
+                '&:hover .darkmode-icon-btn': {
                   backgroundColor: isDarkMode ? '#262726' : '#eef2f7',
                   borderColor: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)',
                 },
               }}
             >
-              {isDarkMode ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
-            </IconButton>
+              <IconButton
+                className="darkmode-icon-btn"
+                sx={{
+                  width: 40,
+                  height: 40,
+                  pointerEvents: 'none',
+                  color: isDarkMode ? '#cbd5e1' : '#475569',
+                  backgroundColor: 'transparent',
+                  border: '1px solid transparent',
+                  transition: 'background-color 0.2s ease, border-color 0.2s ease',
+                }}
+              >
+                {isDarkMode ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+              {isSidebarOpen && (
+                <Typography sx={{ pr: 0.15, fontSize: '0.86rem', color: isDarkMode ? '#cbd5e1' : '#475569', whiteSpace: 'nowrap', lineHeight: 1 }}>
+                  {isDarkMode ? 'Light mode' : 'Dark mode'}
+                </Typography>
+              )}
+            </Box>
           </Tooltip>
         </Box>
 
@@ -971,10 +991,8 @@ function App() {
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               {[
                 { icon: <SparkleIcon sx={{ fontSize: 18 }} />, label: 'Chat', onClick: () => { openChat(); closeSidebar(); } },
-                ...(currentUser ? [
-                  { icon: <InsightsIcon sx={{ fontSize: 18 }} />, label: 'My Insights', onClick: () => { setInsightsOpen(true); void loadCommunityMood(); closeSidebar(); } },
-                  { icon: <MyPromptsIcon sx={{ fontSize: 18 }} />, label: 'My Prompts', onClick: () => { setMyPromptsOpen(true); void loadMyPrompts(); closeSidebar(); } },
-                ] : []),
+                { icon: <InsightsIcon sx={{ fontSize: 18 }} />, label: 'My Insights', onClick: () => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your personal insights.'); closeSidebar(); return; } setInsightsOpen(true); void loadCommunityMood(); closeSidebar(); } },
+                { icon: <MyPromptsIcon sx={{ fontSize: 18 }} />, label: 'My Prompts', onClick: () => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your saved prompts.'); closeSidebar(); return; } setMyPromptsOpen(true); void loadMyPrompts(); closeSidebar(); } },
                 { icon: isDarkMode ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />, label: isDarkMode ? 'Light mode' : 'Dark mode', onClick: () => setIsDarkMode(d => !d) },
               ].map(({ icon, label, onClick }) => (
                 <Box
@@ -1167,19 +1185,20 @@ function App() {
                     }}
                     onSubmit={handleSubmit}
                   />
-                  {currentUser && dailyPrompt && (
+                  {dailyPrompt && (
                     <>
                       <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
                       <DailyPromptCard
-                      prompt={dailyPrompt}
-                      currentUser={currentUser}
-                      isDarkMode={isDarkMode}
-                      isMobile={isMobile}
-                      isToday={true}
-                      onSubmitAnswer={handleSubmitPromptAnswer}
-                      onEditAnswer={handleEditPromptAnswer}
-                      onLoadAnswers={handleLoadPromptAnswers}
-                    />
+                        prompt={dailyPrompt}
+                        currentUser={currentUser}
+                        isDarkMode={isDarkMode}
+                        isMobile={isMobile}
+                        isToday={true}
+                        onSubmitAnswer={handleSubmitPromptAnswer}
+                        onEditAnswer={handleEditPromptAnswer}
+                        onLoadAnswers={handleLoadPromptAnswers}
+                        onLoginRequired={() => openAuthPrompt('login', null, 'Log in to respond to today\'s prompt.')}
+                      />
                     </>
                   )}
                 </Grid>

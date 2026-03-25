@@ -98,6 +98,11 @@ public class DailyPromptService {
         return dayOfYear % PROMPTS.size();
     }
 
+    public DailyPromptDto getTodaysPromptPublic() {
+        int index = getTodaysPromptIndex();
+        return new DailyPromptDto(index, PROMPTS.get(index), null, null, 0, false);
+    }
+
     public DailyPromptDto getTodaysPrompt(Long userId) {
         int index = getTodaysPromptIndex();
         String question = PROMPTS.get(index);

@@ -7,13 +7,14 @@ import PromptAnswerComments from './PromptAnswerComments';
 
 interface DailyPromptCardProps {
   prompt: DailyPrompt;
-  currentUser: AuthUser;
+  currentUser: AuthUser | null;
   isDarkMode: boolean;
   isMobile: boolean;
   isToday: boolean;
   onSubmitAnswer: (answerText: string) => Promise<void>;
   onEditAnswer: (answerText: string) => Promise<void>;
   onLoadAnswers: () => Promise<PromptAnswerResponse[]>;
+  onLoginRequired?: () => void;
 }
 
 function DailyPromptCard({
@@ -24,6 +25,7 @@ function DailyPromptCard({
   onSubmitAnswer,
   onEditAnswer,
   onLoadAnswers,
+  onLoginRequired,
 }: DailyPromptCardProps) {
   const answered = !!prompt.userAnswerText;
   const [inputOpen, setInputOpen] = useState(false);
@@ -154,8 +156,8 @@ function DailyPromptCard({
             alignItems="center"
             gap={0.5}
             mb={answered ? 1.25 : 0}
-            onClick={handleOpenInput}
-            sx={{ cursor: answered ? 'default' : 'pointer', '&:hover': answered ? {} : { opacity: 1 }, opacity: 0.85, transition: 'opacity 0.15s ease' }}
+            onClick={currentUser ? handleOpenInput : undefined}
+            sx={{ cursor: currentUser && !answered ? 'pointer' : 'default', '&:hover': (currentUser && !answered) ? { opacity: 1 } : {}, opacity: 0.85, transition: 'opacity 0.15s ease' }}
           >
             <Typography
               sx={{
@@ -168,13 +170,25 @@ function DailyPromptCard({
             >
               {prompt.question}
             </Typography>
-            {!answered && (
+            {currentUser && !answered && (
               <ChevronIcon sx={{ fontSize: 18, color: textMuted, flexShrink: 0, transform: inputOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
             )}
           </Box>
 
+          {/* Not logged in: prompt to log in */}
+          {!currentUser && (
+            <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'center' }}>
+              <Typography
+                onClick={onLoginRequired}
+                sx={{ fontSize: '0.82rem', color: '#667eea', cursor: 'pointer', opacity: 0.8, '&:hover': { opacity: 1 } }}
+              >
+                Log in to respond
+              </Typography>
+            </Box>
+          )}
+
           {/* Unanswered: inline plain textarea */}
-          {!answered && (
+          {currentUser && !answered && (
             <Fade in={inputOpen} unmountOnExit>
               <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
                 <textarea
