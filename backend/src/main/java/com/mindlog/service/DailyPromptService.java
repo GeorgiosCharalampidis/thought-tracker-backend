@@ -100,7 +100,8 @@ public class DailyPromptService {
 
     public DailyPromptDto getTodaysPromptPublic() {
         int index = getTodaysPromptIndex();
-        return new DailyPromptDto(index, PROMPTS.get(index), null, null, 0, false);
+        int totalAnswerCount = promptAnswerRepository.findByPromptIndex(index).size();
+        return new DailyPromptDto(index, PROMPTS.get(index), null, null, 0, false, totalAnswerCount);
     }
 
     public DailyPromptDto getTodaysPrompt(Long userId) {
@@ -111,7 +112,10 @@ public class DailyPromptService {
         Long userAnswerId = existing.map(PromptAnswer::getId).orElse(null);
         int userAnswerCommentCount = userAnswerId != null ? promptAnswerCommentRepository.countByAnswerId(userAnswerId) : 0;
         boolean saved = existing.map(PromptAnswer::isSaved).orElse(false);
-        return new DailyPromptDto(index, question, userAnswerText, userAnswerId, userAnswerCommentCount, saved);
+        int totalAnswerCount = (int) promptAnswerRepository.findByPromptIndex(index).stream()
+                .filter(a -> !a.getUserId().equals(userId))
+                .count();
+        return new DailyPromptDto(index, question, userAnswerText, userAnswerId, userAnswerCommentCount, saved, totalAnswerCount);
     }
 
     public void savePrompt(Long userId, int promptIndex) {
@@ -152,7 +156,7 @@ public class DailyPromptService {
 
     public List<PromptAnswerDto> getAnswersForPrompt(int promptIndex, Long excludeUserId) {
         return promptAnswerRepository.findByPromptIndex(promptIndex).stream()
-                .filter(a -> !a.getUserId().equals(excludeUserId))
+                .filter(a -> excludeUserId == null || !a.getUserId().equals(excludeUserId))
                 .map(a -> {
                     String username = userRepository.findById(a.getUserId())
                             .map(u -> u.getUsername())

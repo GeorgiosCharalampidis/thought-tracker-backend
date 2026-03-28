@@ -51,8 +51,10 @@ public class DailyPromptController {
     public ResponseEntity<List<PromptAnswerDto>> getAnswers(
             @PathVariable int promptIndex,
             Authentication authentication) {
-        User user = userService.getAuthenticatedUser(authentication);
-        return ResponseEntity.ok(dailyPromptService.getAnswersForPrompt(promptIndex, user.getId()));
+        Long excludeUserId = (authentication != null && authentication.isAuthenticated())
+                ? userService.getAuthenticatedUser(authentication).getId()
+                : null;
+        return ResponseEntity.ok(dailyPromptService.getAnswersForPrompt(promptIndex, excludeUserId));
     }
 
     @PutMapping("/{promptIndex}/answer")

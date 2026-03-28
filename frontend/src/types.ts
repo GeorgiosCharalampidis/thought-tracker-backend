@@ -1,4 +1,9 @@
-export type AuthMode = 'login' | 'register';
+export type AuthMode = 'login' | 'register' | 'verify-pending';
+
+export interface RegisterResponse {
+  message: string;
+  email: string;
+}
 export type PendingAction = 'save' | 'chat' | null;
 
 export interface ChatMessage {
@@ -67,6 +72,7 @@ export interface DailyPrompt {
   userAnswerId?: number;
   userAnswerCommentCount?: number;
   saved: boolean;
+  totalAnswerCount: number;
 }
 
 export interface PromptAnswerResponse {

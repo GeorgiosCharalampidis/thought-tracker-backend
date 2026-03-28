@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -47,6 +48,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<String> handleAuthenticationException(AuthenticationException ex) {
         logger.warn("Authentication failed: {}", ex.getMessage());
+        if (ex instanceof DisabledException || ex.getCause() instanceof DisabledException) {
+            String message = ex instanceof DisabledException ? ex.getMessage() : ex.getCause().getMessage();
+            return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+        }
         return new ResponseEntity<>("Invalid username/email or password", HttpStatus.UNAUTHORIZED);
     }
 

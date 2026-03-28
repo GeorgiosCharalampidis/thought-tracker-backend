@@ -6,6 +6,7 @@ public record DailyPromptDto(
         String userAnswerText,
         Long userAnswerId,
         int userAnswerCommentCount,
-        boolean saved
+        boolean saved,
+        int totalAnswerCount
 ) {
 }
