@@ -6,6 +6,7 @@ import {
   Collapse,
   IconButton,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -86,7 +87,7 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
   }, [noteId, userId, resonancesLoaded]);
 
   useEffect(() => { if (commentsOpen) loadComments(); }, [commentsOpen, loadComments]);
-  useEffect(() => { if (resonancesOpen) loadResonances(); }, [resonancesOpen, loadResonances]);
+  useEffect(() => { loadResonances(); }, [loadResonances]);
 
   const handleSubmitComment = async () => {
     const text = draftText.trim();
@@ -145,16 +146,18 @@ function NoteStatsRow({ noteId, userId, commentCount, currentUser, isDarkMode }:
         </Box>
 
         {resonancesLoaded && resonanceCount > 0 && (
-          <Box
-            display="flex" alignItems="center" gap={0.4}
-            onClick={() => setResonancesOpen(o => !o)}
-            sx={{ cursor: 'pointer' }}
-          >
-            <FavoriteBorderIcon sx={{ fontSize: '0.85rem', color: resonanceColor }} />
-            <Typography variant="caption" sx={{ color: resonanceColor, lineHeight: 1, userSelect: 'none' }}>
-              {`${resonanceCount} resonances`}
-            </Typography>
-          </Box>
+          <Tooltip title="Someone else wrote something with a similar feeling to this thought." placement="top">
+            <Box
+              display="flex" alignItems="center" gap={0.4}
+              onClick={() => setResonancesOpen(o => !o)}
+              sx={{ cursor: 'pointer' }}
+            >
+              <FavoriteBorderIcon sx={{ fontSize: '0.85rem', color: resonanceColor }} />
+              <Typography variant="caption" sx={{ color: resonanceColor, lineHeight: 1, userSelect: 'none' }}>
+                {`${resonanceCount} resonances`}
+              </Typography>
+            </Box>
+          </Tooltip>
         )}
       </Box>
 

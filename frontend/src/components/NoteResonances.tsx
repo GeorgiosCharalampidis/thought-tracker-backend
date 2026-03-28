@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
+  Tooltip,
   Typography,
   Collapse,
   CircularProgress,
@@ -67,18 +68,20 @@ function NoteResonances({ noteId, userId, currentUser, isDarkMode }: NoteResonan
 
   return (
     <Box mt={1.5} pt={1.5}>
-      <Box
-        display="flex"
-        alignItems="center"
-        gap={0.5}
-        sx={{ cursor: 'pointer', width: 'fit-content' }}
-        onClick={() => setOpen(prev => !prev)}
-      >
-        <FavoriteBorderIcon sx={{ fontSize: '0.95rem', color: count > 0 ? resonanceColor : mutedColor }} />
-        <Typography variant="caption" sx={{ color: count > 0 ? resonanceColor : mutedColor, userSelect: 'none' }}>
-          {loading ? '…' : count === 0 ? 'No resonances yet' : `${count} resonance${count === 1 ? '' : 's'}`}
-        </Typography>
-      </Box>
+      <Tooltip title="Someone else wrote something with a similar feeling to this thought." placement="top">
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={0.5}
+          sx={{ cursor: 'pointer', width: 'fit-content' }}
+          onClick={() => setOpen(prev => !prev)}
+        >
+          <FavoriteBorderIcon sx={{ fontSize: '0.95rem', color: count > 0 ? resonanceColor : mutedColor }} />
+          <Typography variant="caption" sx={{ color: count > 0 ? resonanceColor : mutedColor, userSelect: 'none' }}>
+            {loading ? '…' : count === 0 ? 'No resonances yet' : `${count} resonance${count === 1 ? '' : 's'}`}
+          </Typography>
+        </Box>
+      </Tooltip>
 
       <Collapse in={open} sx={{ overflow: 'hidden', '&.MuiCollapse-entered': { overflow: 'hidden' } }}>
         <Box mt={1.5}>

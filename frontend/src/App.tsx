@@ -653,6 +653,13 @@ function App() {
   const isMobile = useMediaQuery('(max-width: 600px)');
   const streak = computeStreak(savedNotes);
 
+  const showOnboarding =
+    !showSimilarThoughts &&
+    (!currentUser || (!notesLoading && savedNotes.length === 0));
+  const onboardingMessage = showOnboarding
+    ? "This is your private journal, powered by AI. Write anything — MindLog will find connections to past thoughts and others who've felt similarly."
+    : undefined;
+
   const theme = createAppTheme(isDarkMode, isMobile);
   const sidebarWidth = isMobile ? Math.min(window.innerWidth * 0.85, 320) : 284;
   const sidebarVisible = isSidebarOpen || isSidebarClosing;
@@ -710,7 +717,8 @@ function App() {
                   setLoading(true);
                   try {
                     const response = await axios.get<SimilarThoughtsResponse>(`/api/notes/${currentUser.id}/similar-to/${noteId}`);
-                    applySimilarThoughtsResponse(response.data, { clearComposer: false });
+                    const clickedNote = savedNotes.find(n => n.id === noteId);
+                    applySimilarThoughtsResponse(response.data, { clearComposer: false, submittedContent: clickedNote?.content });
                   } catch (error) {
                     console.error('Error loading note from notification:', error);
                   } finally {
@@ -1099,7 +1107,8 @@ function App() {
                   const response = await axios.get<SimilarThoughtsResponse>(
                     `/api/notes/${currentUser.id}/similar-to/${noteId}`,
                   );
-                  applySimilarThoughtsResponse(response.data, { clearComposer: false });
+                  const clickedNote = savedNotes.find(n => n.id === noteId);
+                  applySimilarThoughtsResponse(response.data, { clearComposer: false, submittedContent: clickedNote?.content });
                 } catch (error) {
                   console.error('Error loading note from notification:', error);
                 } finally {
@@ -1246,6 +1255,7 @@ function App() {
                     validationMessage={validationMessage}
                     loading={loading}
                     isDarkMode={isDarkMode}
+                    onboardingMessage={onboardingMessage}
                     onChange={(value) => {
                       setNote(value);
                       if (validationMessage) {
