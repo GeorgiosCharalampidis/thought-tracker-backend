@@ -112,9 +112,7 @@ public class DailyPromptService {
         Long userAnswerId = existing.map(PromptAnswer::getId).orElse(null);
         int userAnswerCommentCount = userAnswerId != null ? promptAnswerCommentRepository.countByAnswerId(userAnswerId) : 0;
         boolean saved = existing.map(PromptAnswer::isSaved).orElse(false);
-        int totalAnswerCount = (int) promptAnswerRepository.findByPromptIndex(index).stream()
-                .filter(a -> !a.getUserId().equals(userId))
-                .count();
+        int totalAnswerCount = promptAnswerRepository.findByPromptIndex(index).size();
         return new DailyPromptDto(index, question, userAnswerText, userAnswerId, userAnswerCommentCount, saved, totalAnswerCount);
     }
 
