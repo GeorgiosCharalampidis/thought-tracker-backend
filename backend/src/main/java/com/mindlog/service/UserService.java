@@ -152,7 +152,7 @@ public class UserService {
         );
 
         List<ChatMessage> effectiveMessages = messages.isEmpty()
-                ? List.of(new ChatMessage("user", "Please reflect on my journal entries and share what you notice. Start a real conversation."))
+                ? List.of(new ChatMessage("user", "Hey"))
                 : messages;
 
         try {

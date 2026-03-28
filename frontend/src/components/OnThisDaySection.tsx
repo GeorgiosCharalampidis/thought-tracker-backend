@@ -90,7 +90,6 @@ function MemoryItem({
 
 export default function OnThisDaySection({ memories, isDarkMode, onSelectMemory, skipAnimation, onAnimated }: OnThisDaySectionProps) {
   const groups: MemoryGroup[] = [
-    { label: 'A week ago',  accentColor: '#f59e0b', notes: memories.weekAgo  ?? [] },
     { label: 'A month ago', accentColor: '#8b5cf6', notes: memories.monthAgo ?? [] },
     { label: 'A year ago',  accentColor: '#3b82f6', notes: memories.yearAgo  ?? [] },
   ].filter(g => g.notes.length > 0);

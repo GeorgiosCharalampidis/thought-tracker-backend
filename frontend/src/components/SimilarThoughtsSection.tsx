@@ -106,9 +106,18 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
 
           {/* Submitted thought */}
           {submittedNote && (
-            <Typography sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', textAlign: 'center', lineHeight: 1.6, fontStyle: 'italic', mb: 4 }}>
-              {submittedNote}
-            </Typography>
+            <Box
+              sx={{
+                borderLeft: `3px solid ${isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.35)'}`,
+                pl: 2,
+                mb: 4,
+                textAlign: 'left',
+              }}
+            >
+              <Typography sx={{ fontSize: '1.2rem', color: isDarkMode ? '#e2e8f0' : '#2d3748', lineHeight: 1.6, fontStyle: 'italic' }}>
+                {submittedNote}
+              </Typography>
+            </Box>
           )}
 
           {/* Community notes */}
@@ -121,10 +130,10 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
             }}
           >
             <Typography
-              variant="h5"
               sx={{
+                fontSize: '1rem',
                 fontWeight: 400,
-                color: isDarkMode ? '#f1f5f9' : '#2d3748',
+                color: isDarkMode ? '#94a3b8' : '#64748b',
                 textAlign: 'center',
                 letterSpacing: '-0.01em',
               }}
@@ -143,10 +152,11 @@ function SimilarThoughtsSection({ notes, ownNotes, categoryMessage, isDarkMode, 
             <Box sx={{ width: '100%' }}>
               <Box sx={{ textAlign: 'center', mb: 2.2 }}>
                 <Typography
-                  variant="h6"
                   sx={{
-                    fontWeight: 500,
-                    color: isDarkMode ? '#e0e7ff' : '#3730a3',
+                    fontSize: '1rem',
+                    fontWeight: 400,
+                    color: isDarkMode ? '#94a3b8' : '#64748b',
+                    letterSpacing: '-0.01em',
                   }}
                 >
                   Your related thoughts

@@ -27,7 +27,7 @@ function ThoughtComposer({
 }: ThoughtComposerProps) {
   return (
     <Fade in timeout={800}>
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: 2 }}>
         <Box display="flex" alignItems="center" justifyContent="center" mb={{ xs: 2.5, sm: 4.5 }}>
           <Typography
             sx={{

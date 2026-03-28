@@ -348,8 +348,8 @@ function App() {
   const loadOnThisDay = async (userId: number) => {
     try {
       const response = await axios.get<OnThisDayResponse>(`/api/notes/${userId}/on-this-day`);
-      const { weekAgo, monthAgo, yearAgo } = response.data;
-      const hasAny = weekAgo?.length || monthAgo?.length || yearAgo?.length;
+      const { monthAgo, yearAgo } = response.data;
+      const hasAny = monthAgo?.length || yearAgo?.length;
       setOnThisDay(hasAny ? response.data : null);
     } catch (error) {
       console.error('Error loading on-this-day memories:', error);
@@ -1264,28 +1264,11 @@ function App() {
                     }}
                     onSubmit={handleSubmit}
                   />
-                  {dailyPrompt && (
-                    <>
-                      <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
-                      <DailyPromptCard
-                        prompt={dailyPrompt}
-                        currentUser={currentUser}
-                        isDarkMode={isDarkMode}
-                        isMobile={isMobile}
-                        isToday={true}
-                        onSubmitAnswer={handleSubmitPromptAnswer}
-                        onEditAnswer={handleEditPromptAnswer}
-                        onLoadAnswers={handleLoadPromptAnswers}
-                        onLoginRequired={() => openAuthPrompt('login', null, 'Log in to respond to today\'s prompt.')}
-                      />
-                    </>
-                  )}
                 </Grid>
               )}
 
               {showSimilarThoughts && (
                 <Grid item xs={12} ref={similarThoughtsRef}>
-                  <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
                   <SimilarThoughtsSection
                     key={similarThoughtsKey}
                     notes={similarThoughts}
@@ -1294,6 +1277,23 @@ function App() {
                     isDarkMode={isDarkMode}
                     currentUser={currentUser}
                     submittedNote={submittedNote}
+                  />
+                </Grid>
+              )}
+
+              {dailyPrompt && (
+                <Grid item xs={12}>
+                  <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
+                  <DailyPromptCard
+                    prompt={dailyPrompt}
+                    currentUser={currentUser}
+                    isDarkMode={isDarkMode}
+                    isMobile={isMobile}
+                    isToday={true}
+                    onSubmitAnswer={handleSubmitPromptAnswer}
+                    onEditAnswer={handleEditPromptAnswer}
+                    onLoadAnswers={handleLoadPromptAnswers}
+                    onLoginRequired={() => openAuthPrompt('login', null, 'Log in to respond to today\'s prompt.')}
                   />
                 </Grid>
               )}

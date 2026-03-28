@@ -179,10 +179,9 @@ public class NoteService {
 
     public OnThisDayResponse getOnThisDayNotes(Long userId) {
         LocalDate today = LocalDate.now();
-        List<Note> weekAgo = NoteRepository.findByUser_IdAndDate(userId, today.minusDays(7));
         List<Note> monthAgo = NoteRepository.findByUser_IdAndDate(userId, today.minusMonths(1));
         List<Note> yearAgo = NoteRepository.findByUser_IdAndDate(userId, today.minusYears(1));
-        return new OnThisDayResponse(weekAgo, monthAgo, yearAgo);
+        return new OnThisDayResponse(monthAgo, yearAgo);
     }
 
     public List<String> listSubjectsByUserId(Long userId) {

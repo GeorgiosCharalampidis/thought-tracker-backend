@@ -92,7 +92,6 @@ export interface AnsweredPromptSummary {
 }
 
 export interface OnThisDayResponse {
-  weekAgo: Note[];
   monthAgo: Note[];
   yearAgo: Note[];
 }
