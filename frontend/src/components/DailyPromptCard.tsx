@@ -27,7 +27,7 @@ function DailyPromptCard({
   onLoadAnswers,
   onLoginRequired,
 }: DailyPromptCardProps) {
-  const answered = !!prompt.userAnswerText;
+  const answered = !!currentUser && !!prompt.userAnswerText;
   const [inputOpen, setInputOpen] = useState(false);
   const [answerInput, setAnswerInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -243,7 +243,7 @@ function DailyPromptCard({
             </Fade>
           )}
 
-          {/* Answered: show user's answer + toggle others */}
+          {/* Answered: show user's answer */}
           {answered && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
               {editing ? (
@@ -318,6 +318,12 @@ function DailyPromptCard({
                 </Box>
               )}
 
+            </Box>
+          )}
+
+          {/* See what others said — shown whenever other answers exist */}
+          {prompt.totalAnswerCount > 0 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mt: answered ? 0 : 1.5 }}>
               <Button
                 size="small"
                 variant="text"
@@ -338,7 +344,7 @@ function DailyPromptCard({
                   },
                 }}
               >
-                {answersLoading ? 'Loading…' : othersOpen ? "Hide answers" : 'See what others said'}
+                {answersLoading ? 'Loading…' : othersOpen ? 'Hide answers' : 'See what others said'}
               </Button>
 
               <Collapse in={othersOpen} sx={{ width: '100%' }}>

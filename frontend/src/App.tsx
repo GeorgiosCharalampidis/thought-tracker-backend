@@ -167,6 +167,7 @@ function App() {
   const [onThisDay, setOnThisDay] = useState<OnThisDayResponse | null>(null);
   const [onThisDayLoading, setOnThisDayLoading] = useState(false);
   const [onThisDayAnimated, setOnThisDayAnimated] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -358,6 +359,16 @@ function App() {
     } finally {
       setCommunityMoodLoading(false);
     }
+  };
+
+  const openInsights = async () => {
+    await loadCommunityMood();
+    setInsightsOpen(true);
+  };
+
+  const openMyPrompts = async () => {
+    await loadMyPrompts();
+    setMyPromptsOpen(true);
   };
 
   useEffect(() => {
@@ -556,21 +567,23 @@ function App() {
   };
 
   const handleLogout = async () => {
+    setLoggingOut(true);
     try {
       await axios.post('/api/auth/logout');
     } catch (error) {
       console.error('Error logging out:', error);
-    } finally {
-      setCurrentUser(null);
-      setAuthError('');
-      setSavedNotes([]);
-      setNotesError('');
-      setAuthForm({ identifier: '', username: '', email: '', password: '' });
-      setAuthPromptOpen(false);
-      handleAuthDialogExited();
-      resetJournalState();
-      setNote('');
     }
+    await new Promise(resolve => setTimeout(resolve, 400));
+    setCurrentUser(null);
+    setAuthError('');
+    setSavedNotes([]);
+    setNotesError('');
+    setAuthForm({ identifier: '', username: '', email: '', password: '' });
+    setAuthPromptOpen(false);
+    handleAuthDialogExited();
+    resetJournalState();
+    setNote('');
+    setTimeout(() => setLoggingOut(false), 50);
   };
 
   const handleShareAnotherThought = () => {
@@ -734,7 +747,7 @@ function App() {
           ? (isMobile ? (isSidebarOpen ? '#202120' : '#000000') : '#202120')
           : (isMobile ? (isSidebarOpen ? '#edf1f6' : '#f1f5f9') : '#f1f5f9'),
         transition: 'background-color 0.22s ease',
-        paddingTop: isMobile ? '72px' : (showSimilarThoughts ? '12vh' : (onThisDay ? '10vh' : '28vh')),
+        paddingTop: isMobile ? '72px' : (showSimilarThoughts ? '12vh' : '10vh'),
         // On mobile, vertically center the composer when nothing else is shown
         ...(isMobile && !showSimilarThoughts && !chatOpen && {
           display: 'flex',
@@ -852,7 +865,7 @@ function App() {
               disableTouchListener={sidebarVisible}
             >
               <Box
-                onClick={() => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your personal insights.'); return; } setInsightsOpen(true); void loadCommunityMood(); }}
+                onClick={() => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your personal insights.'); return; } void openInsights(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -911,7 +924,7 @@ function App() {
               disableTouchListener={sidebarVisible}
             >
               <Box
-                onClick={() => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your saved prompts.'); return; } setMyPromptsOpen(true); void loadMyPrompts(); }}
+                onClick={() => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your saved prompts.'); return; } void openMyPrompts(); }}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1037,8 +1050,8 @@ function App() {
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
               {[
                 { icon: <SparkleIcon sx={{ fontSize: 18 }} />, label: 'Chat', onClick: () => { openChat(); closeSidebar(); } },
-                { icon: <InsightsIcon sx={{ fontSize: 18 }} />, label: 'My Insights', onClick: () => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your personal insights.'); closeSidebar(); return; } setInsightsOpen(true); void loadCommunityMood(); closeSidebar(); } },
-                { icon: <MyPromptsIcon sx={{ fontSize: 18 }} />, label: 'My Prompts', onClick: () => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your saved prompts.'); closeSidebar(); return; } setMyPromptsOpen(true); void loadMyPrompts(); closeSidebar(); } },
+                { icon: <InsightsIcon sx={{ fontSize: 18 }} />, label: 'My Insights', onClick: () => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your personal insights.'); closeSidebar(); return; } void openInsights(); closeSidebar(); } },
+                { icon: <MyPromptsIcon sx={{ fontSize: 18 }} />, label: 'My Prompts', onClick: () => { if (!currentUser) { openAuthPrompt('login', null, 'Log in to view your saved prompts.'); closeSidebar(); return; } void openMyPrompts(); closeSidebar(); } },
                 { icon: isDarkMode ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />, label: isDarkMode ? 'Light mode' : 'Dark mode', onClick: () => setIsDarkMode(d => !d) },
               ].map(({ icon, label, onClick }) => (
                 <Box
@@ -1202,22 +1215,25 @@ function App() {
             ml: `${mainContentOffset}px`,
             mr: isMobile ? 0 : (isSidebarOpen ? 0 : '96px'),
             px: isMobile ? 1 : 0,
-            transition: 'margin-left 0.22s ease, margin-right 0.22s ease',
+            transition: 'margin-left 0.22s ease, margin-right 0.22s ease, opacity 0.35s ease',
+            opacity: loggingOut ? 0 : 1,
           }}
         >
           <Container maxWidth="lg">
             <Grid container spacing={2}>
               {onThisDayLoading ? null : !showSimilarThoughts && (
                 <Grid item xs={12}>
-                  {currentUser && onThisDay && (
-                    <OnThisDaySection
-                      memories={onThisDay}
-                      isDarkMode={isDarkMode}
-                      onSelectMemory={handleSavedNoteSelect}
-                      skipAnimation={onThisDayAnimated}
-                      onAnimated={() => setOnThisDayAnimated(true)}
-                    />
-                  )}
+                  <Box sx={{ display: { xs: 'none', sm: 'block' }, minHeight: '230px' }}>
+                    {currentUser && onThisDay && (
+                      <OnThisDaySection
+                        memories={onThisDay}
+                        isDarkMode={isDarkMode}
+                        onSelectMemory={handleSavedNoteSelect}
+                        skipAnimation={onThisDayAnimated}
+                        onAnimated={() => setOnThisDayAnimated(true)}
+                      />
+                    )}
+                  </Box>
                   <ThoughtComposer
                     headingText={headingText}
                     thoughtPlaceholder={thoughtPlaceholder}

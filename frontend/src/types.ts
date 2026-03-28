@@ -72,6 +72,7 @@ export interface DailyPrompt {
   userAnswerId?: number;
   userAnswerCommentCount?: number;
   saved: boolean;
+  totalAnswerCount: number;
 }
 
 export interface PromptAnswerResponse {
