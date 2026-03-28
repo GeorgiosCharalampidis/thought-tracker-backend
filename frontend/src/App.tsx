@@ -1281,7 +1281,7 @@ function App() {
                 </Grid>
               )}
 
-              {dailyPrompt && (
+              {!onThisDayLoading && dailyPrompt && (
                 <Grid item xs={12}>
                   <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
                   <DailyPromptCard
