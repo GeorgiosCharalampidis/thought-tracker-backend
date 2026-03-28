@@ -30,18 +30,19 @@ public class NotificationService {
         Long userId = userService.getAuthenticatedUser(authentication).getId();
 
         List<NotificationResponse> comments = commentRepository
-                .findByNote_User_IdAndSeenFalseAndUser_IdNotOrderByCreatedAtDesc(userId, userId)
+                .findByNote_User_IdAndUser_IdNotOrderByCreatedAtDesc(userId, userId)
                 .stream()
                 .map(NotificationResponse::fromComment)
                 .collect(Collectors.toList());
 
-        List<NotificationResponse> resonances = resonanceService.getUnseenResonancesForUser(userId)
+        List<NotificationResponse> resonances = resonanceService.getResonancesForUser(userId)
                 .stream()
                 .map(NotificationResponse::fromResonance)
                 .collect(Collectors.toList());
 
         return Stream.concat(comments.stream(), resonances.stream())
                 .sorted(Comparator.comparing(NotificationResponse::getOccurredAt).reversed())
+                .limit(50)
                 .collect(Collectors.toList());
     }
 

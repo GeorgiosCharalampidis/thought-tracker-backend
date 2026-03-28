@@ -32,10 +32,18 @@ function formatRelativeTime(iso: string): string {
 
 function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [filter, setFilter] = useState<'ALL' | 'COMMENT' | 'RESONANCE'>('ALL');
+  const [clearedAt, setClearedAt] = useState<number>(() =>
+    parseInt(localStorage.getItem('notificationsClearedAt') || '0', 10)
+  );
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const unseenCount = notifications.filter(n => !n.seen).length;
+  const visibleNotifications = notifications.filter(n =>
+    !n.seen || new Date(n.occurredAt).getTime() > clearedAt
+  );
+  const unseenCount = visibleNotifications.filter(n => !n.seen).length;
+  const filteredNotifications = filter === 'ALL' ? visibleNotifications : visibleNotifications.filter(n => n.type === filter);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -61,12 +69,13 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
   const handleClose = () => setAnchorEl(null);
 
   const handleClearAll = async () => {
-    const prev = notifications;
-    setNotifications([]);
+    const now = Date.now();
+    setClearedAt(now);
+    localStorage.setItem('notificationsClearedAt', String(now));
     try {
       await axios.delete('/api/notifications');
     } catch {
-      setNotifications(prev);
+      // Badge will correct on next poll
     }
   };
 
@@ -165,14 +174,41 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
           },
         }}
       >
-        {notifications.length === 0 ? (
+        {visibleNotifications.length === 0 ? (
           <Box px={2} py={2}>
             <Typography variant="body2" sx={{ color: mutedColor }}>
               You're all caught up.
             </Typography>
           </Box>
         ) : (
-          <Box px={2} pt={1.5} pb={1} display="flex" justifyContent="flex-end">
+          <Box px={2} pt={1.5} pb={1} display="flex" justifyContent="space-between" alignItems="center" sx={{ borderBottom: `1px solid ${borderColor}` }}>
+            <Box display="flex" gap={0.75}>
+              {(['ALL', 'COMMENT', 'RESONANCE'] as const).map(f => (
+                <Box
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  sx={{
+                    px: 1.2,
+                    py: 0.3,
+                    borderRadius: 999,
+                    fontSize: '0.72rem',
+                    fontWeight: filter === f ? 600 : 400,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    backgroundColor: filter === f
+                      ? (f === 'RESONANCE' ? resonanceAccent : f === 'COMMENT' ? unseenAccent : (isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)'))
+                      : 'transparent',
+                    color: filter === f
+                      ? (f === 'RESONANCE' || f === 'COMMENT' ? '#fff' : textColor)
+                      : mutedColor,
+                    transition: 'all 0.15s ease',
+                    '&:hover': { color: textColor },
+                  }}
+                >
+                  {f === 'ALL' ? 'All' : f === 'COMMENT' ? 'Comments' : 'Resonances'}
+                </Box>
+              ))}
+            </Box>
             <Button
               size="small"
               onClick={handleClearAll}
@@ -190,7 +226,15 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
           </Box>
         )}
 
-        {notifications.map((n, idx) => (
+        {filteredNotifications.length === 0 && visibleNotifications.length > 0 && (
+          <Box px={2} py={1.5}>
+            <Typography variant="body2" sx={{ color: mutedColor }}>
+              No {filter === 'COMMENT' ? 'comments' : 'resonances'} yet.
+            </Typography>
+          </Box>
+        )}
+
+        {filteredNotifications.map((n, idx) => (
           <Box
             key={`${n.type}-${n.id}`}
             px={2}
@@ -220,30 +264,23 @@ function NotificationBell({ isDarkMode, isMobile, onNoteClick }: NotificationBel
                 {formatRelativeTime(n.occurredAt)}
               </Typography>
             </Box>
+            <Typography
+              variant="caption"
+              sx={{ color: n.seen ? mutedColor : previewColor, fontStyle: 'italic', lineHeight: 1.4, display: 'block', mb: 0.5 }}
+            >
+              your thought: {n.notePreview}
+            </Typography>
             {n.type === 'RESONANCE' ? (
-              <>
-                <Typography variant="body2" sx={{ color: n.seen ? seenTextColor : textColor, mb: 0.5, fontStyle: 'italic' }}>
-                  Someone resonated with your thought
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: n.seen ? mutedColor : previewColor, lineHeight: 1.4, display: 'block' }}
-                >
-                  their thought: {n.bodyText}
-                </Typography>
-              </>
+              <Typography
+                variant="caption"
+                sx={{ color: n.seen ? mutedColor : previewColor, lineHeight: 1.4, display: 'block' }}
+              >
+                their thought: {n.bodyText}
+              </Typography>
             ) : (
-              <>
-                <Typography variant="body2" sx={{ color: n.seen ? seenTextColor : textColor, mb: 0.5 }}>
-                  {n.bodyText}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: n.seen ? mutedColor : previewColor, fontStyle: 'italic', lineHeight: 1.4, display: 'block' }}
-                >
-                  on: {n.notePreview}
-                </Typography>
-              </>
+              <Typography variant="body2" sx={{ color: n.seen ? seenTextColor : textColor }}>
+                {n.bodyText}
+              </Typography>
             )}
           </Box>
         ))}

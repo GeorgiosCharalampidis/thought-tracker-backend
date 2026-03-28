@@ -11,6 +11,7 @@ interface ThoughtComposerProps {
   isDarkMode: boolean;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  onboardingMessage?: string;
 }
 
 function ThoughtComposer({
@@ -22,6 +23,7 @@ function ThoughtComposer({
   isDarkMode,
   onChange,
   onSubmit,
+  onboardingMessage,
 }: ThoughtComposerProps) {
   return (
     <Fade in timeout={800}>
@@ -134,6 +136,23 @@ function ThoughtComposer({
             </Typography>
           )}
         </Box>
+
+        {onboardingMessage && (
+          <Box display="flex" justifyContent="center" mt={0.5}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: isDarkMode ? '#a0a0a0' : '#666666',
+                fontSize: '0.875rem',
+                textAlign: 'center',
+                maxWidth: '600px',
+                lineHeight: 1.6,
+              }}
+            >
+              {onboardingMessage}
+            </Typography>
+          </Box>
+        )}
       </Box>
     </Fade>
   );
