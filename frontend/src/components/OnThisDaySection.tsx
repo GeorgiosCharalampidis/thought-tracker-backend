@@ -117,14 +117,13 @@ export default function OnThisDaySection({ memories, isDarkMode, onSelectMemory,
 
   return (
     <Box>
-      <Box sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mb: { xs: 2, sm: 4 },
-        ...animSx(2),
-      }}>
-        <HistoryIcon sx={{ fontSize: 14, color: textMuted }} />
-        <Typography sx={{ fontSize: '0.75rem', color: textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 500, lineHeight: 1 }}>
-          On this day
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 2, sm: 4 }, ...animSx(2) }}>
+        <Box sx={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          <HistoryIcon sx={{ fontSize: 14, color: textMuted, position: 'absolute', right: '100%', mr: 0.8 }} />
+          <Typography sx={{ fontSize: '0.75rem', color: textMuted, letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 500, lineHeight: 1 }}>
+            On this day
+          </Typography>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: { xs: 2, sm: 6 }, justifyContent: 'center' }}>

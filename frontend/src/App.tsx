@@ -140,6 +140,7 @@ function App() {
   const [myPromptsLoading, setMyPromptsLoading] = useState(false);
   const chatAbortRef = useRef<AbortController | null>(null);
   const floatingRailRef = useRef<HTMLDivElement>(null);
+  const similarThoughtsRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -280,6 +281,14 @@ function App() {
         });
     }
   }, []);
+
+  useEffect(() => {
+    if (similarThoughtsKey > 0) {
+      setTimeout(() => {
+        similarThoughtsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    }
+  }, [similarThoughtsKey]);
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -586,10 +595,6 @@ function App() {
     setTimeout(() => setLoggingOut(false), 50);
   };
 
-  const handleShareAnotherThought = () => {
-    resetJournalState();
-    setNote('');
-  };
 
   const openSidebar = () => {
     setIsSidebarClosing(false);
@@ -747,7 +752,7 @@ function App() {
           ? (isMobile ? (isSidebarOpen ? '#202120' : '#000000') : '#202120')
           : (isMobile ? (isSidebarOpen ? '#edf1f6' : '#f1f5f9') : '#f1f5f9'),
         transition: 'background-color 0.22s ease',
-        paddingTop: isMobile ? '72px' : (showSimilarThoughts ? '12vh' : '10vh'),
+        paddingTop: isMobile ? '72px' : '10vh',
         // On mobile, vertically center the composer when nothing else is shown
         ...(isMobile && !showSimilarThoughts && !chatOpen && {
           display: 'flex',
@@ -1221,7 +1226,7 @@ function App() {
         >
           <Container maxWidth="lg">
             <Grid container spacing={2}>
-              {onThisDayLoading ? null : !showSimilarThoughts && (
+              {onThisDayLoading ? null : (
                 <Grid item xs={12}>
                   <Box sx={{ display: { xs: 'none', sm: 'block' }, minHeight: '230px' }}>
                     {currentUser && onThisDay && (
@@ -1269,7 +1274,8 @@ function App() {
               )}
 
               {showSimilarThoughts && (
-                <Grid item xs={12}>
+                <Grid item xs={12} ref={similarThoughtsRef}>
+                  <Divider sx={{ my: { xs: 3, sm: 6 }, borderColor: isDarkMode ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.18)' }} />
                   <SimilarThoughtsSection
                     key={similarThoughtsKey}
                     notes={similarThoughts}
@@ -1278,7 +1284,6 @@ function App() {
                     isDarkMode={isDarkMode}
                     currentUser={currentUser}
                     submittedNote={submittedNote}
-                    onShareAnotherThought={handleShareAnotherThought}
                   />
                 </Grid>
               )}

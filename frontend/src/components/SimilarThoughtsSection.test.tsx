@@ -28,7 +28,6 @@ describe('SimilarThoughtsSection', () => {
         categoryMessage="You're not alone"
         isDarkMode={false}
         currentUser={null}
-        onShareAnotherThought={() => {}}
       />,
     );
 
