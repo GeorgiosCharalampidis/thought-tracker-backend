@@ -32,8 +32,8 @@ function DailyPromptCard({
   const [answerInput, setAnswerInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [editDraft, setEditDraft] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const editRef = useRef<HTMLSpanElement>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [othersOpen, setOthersOpen] = useState(false);
   const [otherAnswers, setOtherAnswers] = useState<PromptAnswerResponse[]>([]);
@@ -86,15 +86,31 @@ function DailyPromptCard({
   };
 
   const handleStartEdit = () => {
-    setEditDraft(prompt.userAnswerText ?? '');
     setEditing(true);
+    setTimeout(() => {
+      if (editRef.current) {
+        editRef.current.focus();
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(editRef.current);
+        range.collapse(false);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }, 0);
+  };
+
+  const handleCancelEdit = () => {
+    if (editRef.current) editRef.current.textContent = prompt.userAnswerText ?? '';
+    setEditing(false);
   };
 
   const handleSaveEdit = async () => {
-    if (!editDraft.trim() || editDraft.trim() === prompt.userAnswerText) { setEditing(false); return; }
+    const text = editRef.current?.textContent?.trim() ?? '';
+    if (!text || text === prompt.userAnswerText) { setEditing(false); return; }
     setEditSaving(true);
     try {
-      await onEditAnswer(editDraft.trim());
+      await onEditAnswer(text);
       setEditing(false);
     } finally {
       setEditSaving(false);
@@ -246,44 +262,31 @@ function DailyPromptCard({
           {/* Answered: show user's answer */}
           {answered && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-              {editing ? (
-                <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <textarea
-                    value={editDraft}
-                    onChange={(e) => setEditDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setEditing(false);
-                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSaveEdit(); }
-                    }}
-                    maxLength={500}
-                    rows={3}
-                    autoFocus
-                    style={{
-                      width: '100%', resize: 'none', background: 'transparent', border: 'none',
-                      boxShadow: 'none', outline: 'none', color: textPrimary, fontSize: '0.95rem',
-                      lineHeight: '1.6', fontFamily: 'inherit', padding: '4px 0 8px', textAlign: 'center',
-                      fontStyle: 'italic',
-                    }}
-                  />
-                  <Box display="flex" gap={1}>
-                    <Button size="small" onClick={() => void handleSaveEdit()} disabled={editSaving || !editDraft.trim()}
-                      sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: 999, px: 2, py: 0.4, color: '#ffffff', backgroundColor: '#667eea', minWidth: 0, '&:hover': { backgroundColor: '#5a67d8' }, '&:disabled': { opacity: 0.4, color: '#ffffff', backgroundColor: '#667eea' } }}>
-                      {editSaving ? <CircularProgress size={12} sx={{ color: '#ffffff' }} /> : 'Save'}
-                    </Button>
-                    <Button size="small" onClick={() => setEditing(false)} disabled={editSaving}
-                      sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: 999, px: 2, py: 0.4, color: textMuted, minWidth: 0 }}>
-                      Cancel
-                    </Button>
-                  </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1.6 }}>
+                {/* Left spacer mirrors icon width to keep text truly centered */}
+                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, visibility: 'hidden', pointerEvents: 'none', ml: 1.5 }}>
+                  {isToday && <IconButton component="span" size="small" sx={{ p: 0.4 }}><EditIcon sx={{ fontSize: '1rem' }} /></IconButton>}
+                  {prompt.userAnswerId && <Box component="span" sx={{ px: 0.5, py: 0.4 }}><CommentIcon sx={{ fontSize: '1rem' }} /></Box>}
                 </Box>
-              ) : (
-                <Box sx={{ textAlign: 'center', lineHeight: 1.6 }}>
-                  <Typography component="span" sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', lineHeight: 1.6, fontStyle: 'italic' }}>
-                    {prompt.userAnswerText}
-                  </Typography>
+
+                <Typography
+                  component="span"
+                  ref={editRef as React.RefObject<HTMLSpanElement>}
+                  contentEditable={editing || undefined}
+                  suppressContentEditableWarning
+                  onKeyDown={editing ? (e: React.KeyboardEvent) => {
+                    if (e.key === 'Escape') { e.preventDefault(); handleCancelEdit(); }
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handleSaveEdit(); }
+                  } : undefined}
+                  sx={{ fontSize: '0.95rem', color: isDarkMode ? '#94a3b8' : '#475569', lineHeight: 1.6, fontStyle: 'italic', outline: 'none', wordBreak: 'break-word', textAlign: 'center', display: 'inline-block', paddingRight: '0.2em' }}
+                >
+                  {prompt.userAnswerText}
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, visibility: editing ? 'hidden' : 'visible', ml: 1.5 }}>
                   {isToday && (
                     <IconButton component="span" size="small" onClick={handleStartEdit}
-                      sx={{ p: 0.4, ml: 1.5, color: isDarkMode ? '#94a3b8' : '#64748b', verticalAlign: 'middle', borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}>
+                      sx={{ p: 0.4, color: isDarkMode ? '#94a3b8' : '#64748b', borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}>
                       <EditIcon sx={{ fontSize: '1rem' }} />
                     </IconButton>
                   )}
@@ -292,7 +295,7 @@ function DailyPromptCard({
                       component="span"
                       display="inline-flex" alignItems="center" gap={0.25}
                       onClick={() => setCommentsOpen(p => !p)}
-                      sx={{ cursor: 'pointer', ml: 0.5, px: 0.5, py: 0.4, color: commentsOpen ? '#667eea' : (isDarkMode ? '#94a3b8' : '#64748b'), verticalAlign: 'middle', borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}
+                      sx={{ cursor: 'pointer', px: 0.5, py: 0.4, color: commentsOpen ? '#667eea' : (isDarkMode ? '#94a3b8' : '#64748b'), borderRadius: 999, '&:hover': { color: '#667eea', backgroundColor: isDarkMode ? 'rgba(102,126,234,0.15)' : 'rgba(102,126,234,0.1)' } }}
                     >
                       <CommentIcon sx={{ fontSize: '1rem' }} />
                       {(prompt.userAnswerCommentCount ?? 0) > 0 && (
@@ -302,6 +305,18 @@ function DailyPromptCard({
                       )}
                     </Box>
                   )}
+                </Box>
+              </Box>
+              {editing && (
+                <Box display="flex" gap={1}>
+                  <Button size="small" onClick={() => void handleSaveEdit()} disabled={editSaving}
+                    sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: 999, px: 2, py: 0.4, color: '#ffffff', backgroundColor: '#667eea', minWidth: 0, '&:hover': { backgroundColor: '#5a67d8' }, '&:disabled': { opacity: 0.4, color: '#ffffff', backgroundColor: '#667eea' } }}>
+                    {editSaving ? <CircularProgress size={12} sx={{ color: '#ffffff' }} /> : 'Save'}
+                  </Button>
+                  <Button size="small" onClick={handleCancelEdit} disabled={editSaving}
+                    sx={{ textTransform: 'none', fontSize: '0.8rem', borderRadius: 999, px: 2, py: 0.4, color: textMuted, minWidth: 0 }}>
+                    Cancel
+                  </Button>
                 </Box>
               )}
 
@@ -321,8 +336,8 @@ function DailyPromptCard({
             </Box>
           )}
 
-          {/* See what others said — shown whenever other answers exist */}
-          {prompt.totalAnswerCount > 0 && (
+          {/* See what others said — shown only when other users have answered */}
+          {prompt.totalAnswerCount > (answered ? 1 : 0) && (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, mt: answered ? 0 : 1.5 }}>
               <Button
                 size="small"

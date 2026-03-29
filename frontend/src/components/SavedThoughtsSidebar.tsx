@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Button, CircularProgress, IconButton, Paper, TextField, Tooltip, Typography } from '@mui/material';
+import React, { useRef, useState } from 'react';
+import { Box, Button, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
 import { DeleteOutline as DeleteIcon, Edit as EditIcon, MenuOpen as MenuOpenIcon } from '@mui/icons-material';
 import axios from 'axios';
 import { AuthUser, Note } from '../types';
@@ -82,22 +82,34 @@ function SavedThoughtsSidebar({
   mobileNav,
 }: SavedThoughtsSidebarProps) {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
-  const [editDraft, setEditDraft] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState('');
   const [deletingNoteId, setDeletingNoteId] = useState<number | null>(null);
+  const editRef = useRef<HTMLDivElement>(null);
+  const originalContentRef = useRef('');
 
   const todayStr = toLocalDateStr(new Date());
 
   const startEditing = (note: Note) => {
+    originalContentRef.current = note.content;
     setEditingNoteId(note.id);
-    setEditDraft(note.content);
     setEditError('');
+    setTimeout(() => {
+      if (editRef.current) {
+        editRef.current.focus();
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(editRef.current);
+        range.collapse(false);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }
+    }, 0);
   };
 
   const cancelEditing = () => {
+    if (editRef.current) editRef.current.textContent = originalContentRef.current;
     setEditingNoteId(null);
-    setEditDraft('');
     setEditError('');
   };
 
@@ -115,17 +127,17 @@ function SavedThoughtsSidebar({
   };
 
   const saveEdit = async (note: Note) => {
-    if (!currentUser || !editDraft.trim() || editDraft.trim() === note.content) {
+    const text = editRef.current?.textContent?.trim() ?? '';
+    if (!currentUser || !text || text === note.content) {
       cancelEditing();
       return;
     }
     setEditSaving(true);
     setEditError('');
     try {
-      await axios.put(`/api/notes/${currentUser.id}/${note.id}`, { content: editDraft.trim() });
-      onNoteUpdated(note.id, editDraft.trim());
+      await axios.put(`/api/notes/${currentUser.id}/${note.id}`, { content: text });
+      onNoteUpdated(note.id, text);
       setEditingNoteId(null);
-      setEditDraft('');
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const msg = error.response?.data;
@@ -312,33 +324,67 @@ function SavedThoughtsSidebar({
                           }),
                         }}
                       >
-                        {isEditing ? (
-                          <Box>
-                            <TextField
-                              value={editDraft}
-                              onChange={e => setEditDraft(e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Escape') cancelEditing();
-                                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(savedNote);
-                              }}
-                              multiline
-                              fullWidth
-                              autoFocus
-                              minRows={3}
-                              maxRows={8}
-                              inputProps={{ maxLength: 2000 }}
-                              sx={{
-                                mb: 1,
-                                '& .MuiOutlinedInput-root': {
-                                  fontSize: '0.87rem',
-                                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(15,23,42,0.02)',
-                                  '& fieldset': { borderColor },
-                                  '&:hover fieldset': { borderColor },
-                                  '&.Mui-focused fieldset': { borderColor: '#667eea' },
-                                },
-                                '& .MuiInputBase-input': { color: textColor },
-                              }}
-                            />
+                        <Box onClick={!isEditing ? () => onSelectNote(savedNote) : undefined}>
+                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                            <Typography sx={{ fontSize: '0.72rem', color: mutedColor, letterSpacing: '0.01em' }}>
+                              {savedNote.category}
+                            </Typography>
+                            {isToday && !isEditing && (
+                              <Box display="flex" alignItems="center">
+                                <Tooltip title="Edit" placement="top">
+                                  <IconButton
+                                    size="small"
+                                    onClick={e => { e.stopPropagation(); startEditing(savedNote); }}
+                                    sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#667eea' } }}
+                                  >
+                                    <EditIcon sx={{ fontSize: '0.85rem' }} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete" placement="top">
+                                  <IconButton
+                                    size="small"
+                                    onClick={e => { e.stopPropagation(); void deleteNote(savedNote); }}
+                                    disabled={deletingNoteId === savedNote.id}
+                                    sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#ef4444' }, '&:disabled': { color: mutedColor } }}
+                                  >
+                                    {deletingNoteId === savedNote.id
+                                      ? <CircularProgress size={10} sx={{ color: mutedColor }} />
+                                      : <DeleteIcon sx={{ fontSize: '0.85rem' }} />}
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            )}
+                          </Box>
+                          <Typography
+                            component="div"
+                            ref={isEditing ? editRef : null}
+                            contentEditable={isEditing || undefined}
+                            suppressContentEditableWarning
+                            onKeyDown={isEditing ? (e: React.KeyboardEvent) => {
+                              if (e.key === 'Escape') cancelEditing();
+                              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(savedNote);
+                            } : undefined}
+                            sx={{
+                              fontSize: '0.87rem',
+                              lineHeight: 1.5,
+                              color: textColor,
+                              outline: 'none',
+                              wordBreak: 'break-word',
+                              fontStyle: 'italic',
+                              paddingRight: '0.2em',
+                              ...(isEditing ? {} : {
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }),
+                            }}
+                          >
+                            {savedNote.content}
+                          </Typography>
+                        </Box>
+                        {isEditing && (
+                          <Box mt={0.75}>
                             {editError && (
                               <Typography sx={{ fontSize: '0.78rem', color: '#ef4444', mb: 0.75 }}>
                                 {editError}
@@ -348,7 +394,7 @@ function SavedThoughtsSidebar({
                               <Button
                                 size="small"
                                 onClick={() => saveEdit(savedNote)}
-                                disabled={editSaving || !editDraft.trim()}
+                                disabled={editSaving}
                                 sx={{ textTransform: 'none', fontSize: '0.8rem', color: '#667eea', minWidth: 0, px: 0.5, py: 0.25 }}
                               >
                                 {editSaving ? <CircularProgress size={12} /> : 'Save'}
@@ -362,53 +408,6 @@ function SavedThoughtsSidebar({
                                 Cancel
                               </Button>
                             </Box>
-                          </Box>
-                        ) : (
-                          <Box onClick={() => onSelectNote(savedNote)}>
-                            <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                              <Typography sx={{ fontSize: '0.72rem', color: mutedColor, letterSpacing: '0.01em' }}>
-                                {savedNote.category}
-                              </Typography>
-                              {isToday && (
-                                <Box display="flex" alignItems="center">
-                                  <Tooltip title="Edit" placement="top">
-                                    <IconButton
-                                      size="small"
-                                      onClick={e => { e.stopPropagation(); startEditing(savedNote); }}
-                                      sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#667eea' } }}
-                                    >
-                                      <EditIcon sx={{ fontSize: '0.85rem' }} />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Delete" placement="top">
-                                    <IconButton
-                                      size="small"
-                                      onClick={e => { e.stopPropagation(); void deleteNote(savedNote); }}
-                                      disabled={deletingNoteId === savedNote.id}
-                                      sx={{ p: 0.3, color: mutedColor, '&:hover': { color: '#ef4444' }, '&:disabled': { color: mutedColor } }}
-                                    >
-                                      {deletingNoteId === savedNote.id
-                                        ? <CircularProgress size={10} sx={{ color: mutedColor }} />
-                                        : <DeleteIcon sx={{ fontSize: '0.85rem' }} />}
-                                    </IconButton>
-                                  </Tooltip>
-                                </Box>
-                              )}
-                            </Box>
-                            <Typography
-                              sx={{
-                                fontSize: '0.87rem',
-                                fontStyle: 'italic',
-                                lineHeight: 1.5,
-                                color: textColor,
-                                display: '-webkit-box',
-                                WebkitLineClamp: 3,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {savedNote.content}
-                            </Typography>
                           </Box>
                         )}
 

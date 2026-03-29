@@ -1,5 +1,5 @@
 @echo off
-echo Starting MindLog...
+echo Starting Rumino...
 
-start "MindLog Backend" cmd /k "cd /d %~dp0backend && mvnw.cmd spring-boot:run"
-start "MindLog Frontend" cmd /k "cd /d %~dp0frontend && npm start"
+start "Rumino Backend" cmd /k "cd /d %~dp0backend && mvnw.cmd spring-boot:run"
+start "Rumino Frontend" cmd /k "cd /d %~dp0frontend && npm start"

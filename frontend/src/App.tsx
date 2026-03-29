@@ -657,7 +657,7 @@ function App() {
     !showSimilarThoughts &&
     (!currentUser || (!notesLoading && savedNotes.length === 0));
   const onboardingMessage = showOnboarding
-    ? "This is your private journal, powered by AI. Write anything — MindLog will find connections to past thoughts and others who've felt similarly."
+    ? "This is your private journal, powered by AI. Write anything — Rumino will find connections to past thoughts and others who've felt similarly."
     : undefined;
 
   const theme = createAppTheme(isDarkMode, isMobile);

@@ -29,9 +29,9 @@ public class EmailService {
 
     public void sendVerificationEmail(String toAddress, String username, String token) {
         String link = baseUrl + "/verify-email?token=" + token;
-        String subject = "Verify your MindLog email";
+        String subject = "Verify your Rumino email";
         String body = "<p>Hi " + username + ",</p>"
-                + "<p>Thank you for signing up to MindLog. Please verify your email by clicking the link below:</p>"
+                + "<p>Thank you for signing up to Rumino. Please verify your email by clicking the link below:</p>"
                 + "<p><a href=\"" + link + "\">Verify my email</a></p>"
                 + "<p>This link expires in 24 hours.</p>"
                 + "<p>If you did not create an account, you can safely ignore this email.</p>";
