@@ -76,6 +76,10 @@ public class AuthController {
             @Valid @RequestBody AuthRequest authRequest,
             HttpServletRequest request
     ) {
+        if (!rateLimitService.isLoginAllowed(request.getRemoteAddr())) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new AuthResponse("Too many login attempts. Please try again in 15 minutes.", null));
+        }
         User user = authenticateIntoSession(authRequest.getIdentifier(), authRequest.getPassword(), request);
         return ResponseEntity.ok(new AuthResponse("Login successful", UserResponse.from(user)));
     }
