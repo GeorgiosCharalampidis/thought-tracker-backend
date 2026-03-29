@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.mindlog.app',
+  appId: 'com.rumino.app',
   appName: 'MindLog',
   webDir: 'build',
   server: {

@@ -10,10 +10,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>com.mindlog</groupId>
-	<artifactId>mindlog</artifactId>
+	<groupId>com.rumino</groupId>
+	<artifactId>rumino</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>mindlog</name>
+	<name>rumino</name>
 	<description>mindLog application built with Spring Boot</description>
 
 	<properties>

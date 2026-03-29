@@ -18,7 +18,7 @@ services:
     depends_on:
       - db
     networks:
-      - mindlog-network
+      - rumino-network
 
   frontend:
     build: ./frontend
@@ -32,7 +32,7 @@ services:
     depends_on:
       - backend
     networks:
-      - mindlog-network
+      - rumino-network
 
   db:
     image: postgres:15
@@ -45,11 +45,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - mindlog-network
+      - rumino-network
 
 volumes:
   postgres_data:
 
 networks:
-  mindlog-network:
+  rumino-network:
     driver: bridge
