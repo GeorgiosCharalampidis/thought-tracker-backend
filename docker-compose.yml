@@ -9,7 +9,10 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/mood
       - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=123
+      - DB_PASSWORD=${DB_PASSWORD}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
     volumes:
       - ./backend:/app
     depends_on:
@@ -36,7 +39,7 @@ services:
     environment:
       - POSTGRES_DB=mood
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=123
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:

@@ -48,6 +48,9 @@ frontend/dist/
 .env.test.local
 .env.production.local
 
+# Local Spring Boot secrets (never commit)
+backend/src/main/resources/application-local.properties
+
 # IDE
 .vscode/
 
